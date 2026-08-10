@@ -1,0 +1,8 @@
+{
+  "id": "media-comics",
+  "name": "Manga / Comic Manager",
+  "version": "0.1.0",
+  "description": "Manga/comic series + issue library manager scaffold",
+  "roles": ["media", "comics"],
+  "capabilities": ["media.comics", "comics", "manga", "settings"]
+}
