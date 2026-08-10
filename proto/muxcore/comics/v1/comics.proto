@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package muxcore.comics.v1;
+
+option go_package = "github.com/Muxcore-Media/media-comics/proto/gen/muxcore/comics/v1;comicsv1";
+
+// ComicManagementService manages manga/comic series and issues (scaffold).
+service ComicManagementService {
+  rpc AddSeries(AddSeriesRequest) returns (AddSeriesResponse);
+  rpc GetSeries(GetSeriesRequest) returns (GetSeriesResponse);
+  rpc ListSeries(ListSeriesRequest) returns (ListSeriesResponse);
+  rpc RemoveSeries(RemoveSeriesRequest) returns (RemoveSeriesResponse);
+  rpc AddIssue(AddIssueRequest) returns (AddIssueResponse);
+  rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse);
+}
+
+message Series {
+  string id = 1;
+  string title = 2;
+  string publisher = 3;
+  string comicvine_id = 4;
+  bool monitored = 5;
+  string path = 6;
+}
+
+message Issue {
+  string id = 1;
+  string series_id = 2;
+  string title = 3;
+  string number = 4;
+  int32 year = 5;
+  bool monitored = 6;
+}
+
+message AddSeriesRequest {
+  string title = 1;
+  string publisher = 2;
+  string comicvine_id = 3;
+  bool monitored = 4;
+  string path = 5;
+}
+message AddSeriesResponse { Series series = 1; }
+message GetSeriesRequest { string id = 1; }
+message GetSeriesResponse { Series series = 1; }
+message ListSeriesRequest { string query = 1; }
+message ListSeriesResponse { repeated Series series = 1; }
+message RemoveSeriesRequest { string id = 1; bool delete_files = 2; }
+message RemoveSeriesResponse { bool success = 1; }
+
+message AddIssueRequest {
+  string series_id = 1;
+  string title = 2;
+  string number = 3;
+  int32 year = 4;
+  bool monitored = 5;
+}
+message AddIssueResponse { Issue issue = 1; }
+message ListIssuesRequest { string series_id = 1; }
+message ListIssuesResponse { repeated Issue issues = 1; }
