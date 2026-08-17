@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -17,16 +18,26 @@ import (
 )
 
 type Module struct {
-	id, grpcAddr, httpAddr, libraryDir string
-	cfgMu                              sync.RWMutex
-	store                              *Store
-	grpcSrv                            *grpc.Server
-	lis                                net.Listener
-	httpSrv                            *http.Server
+	id         string
+	grpcAddr   string
+	httpAddr   string
+	dataDir    string
+	libraryDir string
+
+	cfgMu sync.RWMutex
+	store *Store
+
+	grpcSrv *grpc.Server
+	lis     net.Listener
+	httpSrv *http.Server
 }
 
 type Config struct {
-	ID, LibraryDir, GRPCAddr, HTTPAddr string
+	ID         string
+	DataDir    string
+	LibraryDir string
+	GRPCAddr   string
+	HTTPAddr   string
 }
 
 func NewModule(cfg Config) *Module {
@@ -39,39 +50,64 @@ func NewModule(cfg Config) *Module {
 	if cfg.HTTPAddr == "" {
 		cfg.HTTPAddr = ":9661"
 	}
+	if v := os.Getenv("COMICS_DATA_DIR"); v != "" {
+		cfg.DataDir = v
+	}
 	if v := os.Getenv("COMICS_LIBRARY_DIR"); v != "" {
 		cfg.LibraryDir = v
 	}
 	if v := os.Getenv("MUXCORE_HTTP_ADDR"); v != "" {
 		cfg.HTTPAddr = v
 	}
+	if cfg.DataDir == "" {
+		cfg.DataDir = "./data"
+	}
 	if cfg.LibraryDir == "" {
-		cfg.LibraryDir = "./data/comics"
+		cfg.LibraryDir = filepath.Join(cfg.DataDir, "comics")
 	}
 	return &Module{
 		id: cfg.ID, grpcAddr: cfg.GRPCAddr, httpAddr: cfg.HTTPAddr,
-		libraryDir: cfg.LibraryDir, store: NewStore(),
+		dataDir: cfg.DataDir, libraryDir: cfg.LibraryDir,
 	}
 }
 
 func (m *Module) Info() contracts.ModuleInfo {
 	return contracts.ModuleInfo{
-		ID: m.id, Name: "Manga / Comic Manager", Version: "0.1.0",
+		ID: m.id, Name: "Manga / Comic Manager", Version: "0.2.0",
 		Roles:        []string{"media", "comics"},
-		Description:  "Manga/comic series + issue library manager (scaffold)",
+		Description:  "Manga/comic series + issue library manager with SQLite persistence",
 		Capabilities: []string{"media.comics", "comics", "manga", "settings"},
 		HTTPAddr:     m.grpcAddr,
 	}
 }
 
-func (m *Module) Init(ctx context.Context) error { return nil }
+func (m *Module) Init(ctx context.Context) error {
+	if err := os.MkdirAll(m.dataDir, 0o700); err != nil {
+		return fmt.Errorf("create data dir: %w", err)
+	}
+	if err := os.MkdirAll(m.libraryDir, 0o700); err != nil {
+		return fmt.Errorf("create library dir: %w", err)
+	}
+	dbPath := filepath.Join(m.dataDir, "comics.db")
+	store, err := OpenStore(dbPath)
+	if err != nil {
+		return err
+	}
+	m.store = store
+	slog.Info("comics library store open", "db", dbPath, "library", m.libraryDir)
+	return nil
+}
 
 func (m *Module) Start(ctx context.Context) error {
+	if m.store == nil {
+		return fmt.Errorf("store not initialized")
+	}
 	lis, err := net.Listen("tcp", m.grpcAddr)
 	if err != nil {
 		return fmt.Errorf("listen gRPC %s: %w", m.grpcAddr, err)
 	}
 	m.lis = lis
+	m.grpcAddr = lis.Addr().String()
 	m.grpcSrv = grpc.NewServer()
 	comicsv1.RegisterComicManagementServiceServer(m.grpcSrv, &comicServer{m: m})
 	modulesdk.RegisterSettings(m.grpcSrv, m.id, m)
@@ -86,15 +122,27 @@ func (m *Module) Start(ctx context.Context) error {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
-	m.httpSrv = &http.Server{Addr: m.httpAddr, Handler: mux}
+	m.registerComicsHTTPAPI(mux)
+	httpLis, err := net.Listen("tcp", m.httpAddr)
+	if err != nil {
+		return fmt.Errorf("listen HTTP %s: %w", m.httpAddr, err)
+	}
+	m.httpAddr = httpLis.Addr().String()
+	m.httpSrv = &http.Server{Handler: mux}
 	go func() {
 		slog.Info("health listening", "addr", m.httpAddr)
-		if err := m.httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := m.httpSrv.Serve(httpLis); err != nil && err != http.ErrServerClosed {
 			slog.Error("health serve", "error", err)
 		}
 	}()
 	return nil
 }
+
+// GRPCListenAddr returns the bound gRPC address after Start.
+func (m *Module) GRPCListenAddr() string { return m.grpcAddr }
+
+// HTTPListenAddr returns the bound health/HTTP API address after Start.
+func (m *Module) HTTPListenAddr() string { return m.httpAddr }
 
 func (m *Module) Stop(ctx context.Context) error {
 	if m.grpcSrv != nil {
@@ -103,10 +151,31 @@ func (m *Module) Stop(ctx context.Context) error {
 	if m.httpSrv != nil {
 		_ = m.httpSrv.Shutdown(ctx)
 	}
+	if m.store != nil {
+		_ = m.store.Close()
+		m.store = nil
+	}
 	return nil
 }
 
-func (m *Module) Health(ctx context.Context) error { return nil }
+func (m *Module) Health(ctx context.Context) error {
+	if m.store == nil {
+		return fmt.Errorf("store not open")
+	}
+	return nil
+}
+
+// ScanLibrary scans the configured library root into SQLite.
+func (m *Module) ScanLibrary() (*ScanResult, error) {
+	m.cfgMu.RLock()
+	root := m.libraryDir
+	store := m.store
+	m.cfgMu.RUnlock()
+	if store == nil {
+		return nil, fmt.Errorf("store not open")
+	}
+	return store.ScanLibraryRoot(root)
+}
 
 type comicServer struct {
 	comicsv1.UnimplementedComicManagementServiceServer
@@ -133,7 +202,10 @@ func (s *comicServer) GetSeries(_ context.Context, req *comicsv1.GetSeriesReques
 }
 
 func (s *comicServer) ListSeries(_ context.Context, req *comicsv1.ListSeriesRequest) (*comicsv1.ListSeriesResponse, error) {
-	items := s.m.store.ListSeries(req.GetQuery())
+	items, err := s.m.store.ListSeries(req.GetQuery())
+	if err != nil {
+		return nil, err
+	}
 	out := make([]*comicsv1.Series, 0, len(items))
 	for _, ser := range items {
 		out = append(out, toPBSeries(ser))
@@ -160,7 +232,10 @@ func (s *comicServer) AddIssue(_ context.Context, req *comicsv1.AddIssueRequest)
 }
 
 func (s *comicServer) ListIssues(_ context.Context, req *comicsv1.ListIssuesRequest) (*comicsv1.ListIssuesResponse, error) {
-	items := s.m.store.ListIssues(req.GetSeriesId())
+	items, err := s.m.store.ListIssues(req.GetSeriesId())
+	if err != nil {
+		return nil, err
+	}
 	out := make([]*comicsv1.Issue, 0, len(items))
 	for _, iss := range items {
 		out = append(out, toPBIssue(iss))
