@@ -51,6 +51,31 @@ func TestStoreSeriesIssueRoundTrip(t *testing.T) {
 	}
 }
 
+func TestStoreListMissingIssues(t *testing.T) {
+	s, _ := openTempStore(t)
+	ser, err := s.AddSeries(internal.Series{Title: "Berserk", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing, err := s.AddIssue(internal.Issue{SeriesID: ser.ID, Number: "1", Title: "The Black Swordsman", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.AddIssue(internal.Issue{SeriesID: ser.ID, Number: "2", Title: "On disk", Monitored: true, Path: "/tmp/fake.cbz"}); err != nil {
+		t.Fatal(err)
+	}
+	items, total, err := s.ListMissingIssues(1, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if total != 1 || len(items) != 1 {
+		t.Fatalf("total=%d items=%d", total, len(items))
+	}
+	if items[0].IssueID != missing.ID || items[0].SeriesName != "Berserk" {
+		t.Fatalf("%+v", items[0])
+	}
+}
+
 func TestStorePersistsAcrossOpen(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "comics.db")
