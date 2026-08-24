@@ -11,7 +11,7 @@ func openTempStore(t *testing.T) (*internal.Store, string) {
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "comics.db")
-	s, err := internal.OpenStore(path)
+	s, err := internal.OpenStore(t.Context(), path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,28 +21,29 @@ func openTempStore(t *testing.T) (*internal.Store, string) {
 
 func TestStoreSeriesIssueRoundTrip(t *testing.T) {
 	s, _ := openTempStore(t)
-	ser, err := s.AddSeries(internal.Series{Title: "One Piece", Publisher: "Shueisha", Monitored: true})
+	ctx := t.Context()
+	ser, err := s.AddSeries(ctx, internal.Series{Title: "One Piece", Publisher: "Shueisha", Monitored: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	iss, err := s.AddIssue(internal.Issue{SeriesID: ser.ID, Number: "1", Title: "Romance Dawn", Year: 1997, Monitored: true})
+	iss, err := s.AddIssue(ctx, internal.Issue{SeriesID: ser.ID, Number: "1", Title: "Romance Dawn", Year: 1997, Monitored: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if iss.Number != "1" {
 		t.Fatalf("%+v", iss)
 	}
-	listed, err := s.ListIssues(ser.ID)
+	listed, err := s.ListIssues(ctx, ser.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(listed) != 1 {
 		t.Fatal("expected 1 issue")
 	}
-	if err := s.RemoveSeries(ser.ID); err != nil {
+	if err := s.RemoveSeries(ctx, ser.ID); err != nil {
 		t.Fatal(err)
 	}
-	issues, err := s.ListIssues("")
+	issues, err := s.ListIssues(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,18 +54,19 @@ func TestStoreSeriesIssueRoundTrip(t *testing.T) {
 
 func TestStoreListMissingIssues(t *testing.T) {
 	s, _ := openTempStore(t)
-	ser, err := s.AddSeries(internal.Series{Title: "Berserk", Monitored: true})
+	ctx := t.Context()
+	ser, err := s.AddSeries(ctx, internal.Series{Title: "Berserk", Monitored: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	missing, err := s.AddIssue(internal.Issue{SeriesID: ser.ID, Number: "1", Title: "The Black Swordsman", Monitored: true})
+	missing, err := s.AddIssue(ctx, internal.Issue{SeriesID: ser.ID, Number: "1", Title: "The Black Swordsman", Monitored: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.AddIssue(internal.Issue{SeriesID: ser.ID, Number: "2", Title: "On disk", Monitored: true, Path: "/tmp/fake.cbz"}); err != nil {
+	if _, err := s.AddIssue(ctx, internal.Issue{SeriesID: ser.ID, Number: "2", Title: "On disk", Monitored: true, Path: "/tmp/fake.cbz"}); err != nil {
 		t.Fatal(err)
 	}
-	items, total, err := s.ListMissingIssues(1, 50)
+	items, total, err := s.ListMissingIssues(ctx, 1, 50)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,34 +81,35 @@ func TestStoreListMissingIssues(t *testing.T) {
 func TestStorePersistsAcrossOpen(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "comics.db")
-	s1, err := internal.OpenStore(path)
+	ctx := t.Context()
+	s1, err := internal.OpenStore(ctx, path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ser, err := s1.AddSeries(internal.Series{Title: "Monster", Publisher: "Shogakukan", Monitored: true})
+	ser, err := s1.AddSeries(ctx, internal.Series{Title: "Monster", Publisher: "Shogakukan", Monitored: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s1.AddIssue(internal.Issue{SeriesID: ser.ID, Number: "1", Title: "Herr Dr. Tenma"}); err != nil {
+	if _, err := s1.AddIssue(ctx, internal.Issue{SeriesID: ser.ID, Number: "1", Title: "Herr Dr. Tenma"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := s1.Close(); err != nil {
 		t.Fatal(err)
 	}
 
-	s2, err := internal.OpenStore(path)
+	s2, err := internal.OpenStore(ctx, path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer s2.Close()
-	series, err := s2.ListSeries("monster")
+	series, err := s2.ListSeries(ctx, "monster")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(series) != 1 {
 		t.Fatalf("series=%d", len(series))
 	}
-	issues, err := s2.ListIssues(series[0].ID)
+	issues, err := s2.ListIssues(ctx, series[0].ID)
 	if err != nil {
 		t.Fatal(err)
 	}
