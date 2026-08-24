@@ -17,7 +17,8 @@ func TestScanLibraryRootFixtures(t *testing.T) {
 	}
 
 	s, _ := openTempStore(t)
-	res, err := s.ScanLibraryRoot(root)
+	ctx := t.Context()
+	res, err := s.ScanLibraryRoot(ctx, root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +30,7 @@ func TestScanLibraryRootFixtures(t *testing.T) {
 		t.Fatalf("expected imports, got %+v", res)
 	}
 
-	series, err := s.ListSeries("")
+	series, err := s.ListSeries(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +47,7 @@ func TestScanLibraryRootFixtures(t *testing.T) {
 	if fixtureSeries == nil {
 		t.Fatalf("Fixture Series not found: %+v", series)
 	}
-	issues, err := s.ListIssues(fixtureSeries.ID)
+	issues, err := s.ListIssues(ctx, fixtureSeries.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +56,7 @@ func TestScanLibraryRootFixtures(t *testing.T) {
 	}
 
 	// Idempotent rescan should skip already-imported paths.
-	res2, err := s.ScanLibraryRoot(root)
+	res2, err := s.ScanLibraryRoot(ctx, root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +70,7 @@ func TestScanLibraryRootFixtures(t *testing.T) {
 
 func TestScanLibraryRootMissing(t *testing.T) {
 	s, _ := openTempStore(t)
-	_, err := s.ScanLibraryRoot(filepath.Join(t.TempDir(), "does-not-exist"))
+	_, err := s.ScanLibraryRoot(t.Context(), filepath.Join(t.TempDir(), "does-not-exist"))
 	if err == nil {
 		t.Fatal("expected error for missing root")
 	}
@@ -94,7 +95,7 @@ func TestModuleInitScan(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = m.Stop(t.Context()) })
 
-	res, err := m.ScanLibrary()
+	res, err := m.ScanLibrary(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +117,7 @@ func TestScanConfiguredLibrary(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = m.Stop(t.Context()) })
-	res, err := m.ScanLibrary()
+	res, err := m.ScanLibrary(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}

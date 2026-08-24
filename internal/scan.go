@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -30,7 +31,7 @@ type ScanResult struct {
 // Layout expected: Series/issue.ext (or Series/subdir/issue.ext — series is the
 // first path segment under root). Metadata is derived only from path/filename —
 // no network lookups.
-func (s *Store) ScanLibraryRoot(root string) (*ScanResult, error) {
+func (s *Store) ScanLibraryRoot(ctx context.Context, root string) (*ScanResult, error) {
 	root, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return nil, fmt.Errorf("library root: %w", err)
@@ -56,15 +57,10 @@ func (s *Store) ScanLibraryRoot(root string) (*ScanResult, error) {
 			return nil
 		}
 		res.FilesFound++
-		abs, err := filepath.Abs(path)
-		if err != nil {
-			res.FilesSkipped++
-			return nil
-		}
-		seriesTitle, number, issueTitle := inferComicFromPath(root, abs)
-		imported, err := s.importComicFile(seriesTitle, number, issueTitle, abs)
-		if err != nil {
-			return err
+		seriesTitle, number, issueTitle := inferComicFromPath(root, path)
+		imported, importErr := s.importComicFile(ctx, seriesTitle, number, issueTitle, path)
+		if importErr != nil {
+			return importErr
 		}
 		if imported {
 			res.FilesImported++
@@ -79,18 +75,18 @@ func (s *Store) ScanLibraryRoot(root string) (*ScanResult, error) {
 	return res, nil
 }
 
-func (s *Store) importComicFile(seriesTitle, number, issueTitle, absPath string) (imported bool, err error) {
-	existing, err := s.findIssueByPath(absPath)
+func (s *Store) importComicFile(ctx context.Context, seriesTitle, number, issueTitle, absPath string) (imported bool, err error) {
+	existing, err := s.findIssueByPath(ctx, absPath)
 	if err != nil {
 		return false, err
 	}
 
-	ser, err := s.findSeriesByTitle(seriesTitle)
+	ser, err := s.findSeriesByTitle(ctx, seriesTitle)
 	if err != nil {
 		return false, err
 	}
 	if ser == nil {
-		ser, err = s.AddSeries(Series{
+		ser, err = s.AddSeries(ctx, Series{
 			Title:     seriesTitle,
 			Monitored: true,
 			Path:      filepath.Dir(absPath),
@@ -100,7 +96,7 @@ func (s *Store) importComicFile(seriesTitle, number, issueTitle, absPath string)
 		}
 	}
 
-	_, err = s.upsertIssue(Issue{
+	_, err = s.upsertIssue(ctx, Issue{
 		SeriesID:  ser.ID,
 		Title:     issueTitle,
 		Number:    number,

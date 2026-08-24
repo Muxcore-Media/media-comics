@@ -19,7 +19,7 @@ func (m *Module) handleListSeriesHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
 		return
 	}
-	items, err := m.store.ListSeries(r.URL.Query().Get("q"))
+	items, err := m.store.ListSeries(r.Context(), r.URL.Query().Get("q"))
 	if err != nil {
 		http.Error(w, fmtJSONError(err), http.StatusInternalServerError)
 		return
@@ -41,7 +41,7 @@ func (m *Module) handleGetSeriesHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
 		return
 	}
-	s, err := m.store.GetSeries(id)
+	s, err := m.store.GetSeries(r.Context(), id)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "not found") {
@@ -50,7 +50,7 @@ func (m *Module) handleGetSeriesHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmtJSONError(err), status)
 		return
 	}
-	issues, err := m.store.ListIssues(id)
+	issues, err := m.store.ListIssues(r.Context(), id)
 	if err != nil {
 		http.Error(w, fmtJSONError(err), http.StatusInternalServerError)
 		return
@@ -67,7 +67,7 @@ func (m *Module) handleListIssuesHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
 		return
 	}
-	items, err := m.store.ListIssues(r.URL.Query().Get("series_id"))
+	items, err := m.store.ListIssues(r.Context(), r.URL.Query().Get("series_id"))
 	if err != nil {
 		http.Error(w, fmtJSONError(err), http.StatusInternalServerError)
 		return
@@ -92,20 +92,13 @@ func (m *Module) handleListMissingHTTP(w http.ResponseWriter, r *http.Request) {
 	if pageSize <= 0 {
 		pageSize = 100
 	}
-	items, total, err := m.store.ListMissingIssues(page, pageSize)
+	items, total, err := m.store.ListMissingIssues(r.Context(), page, pageSize)
 	if err != nil {
 		http.Error(w, fmtJSONError(err), http.StatusInternalServerError)
 		return
 	}
-	out := make([]missingIssueJSON, 0, len(items))
-	for _, it := range items {
-		out = append(out, missingIssueJSON{
-			IssueID: it.IssueID, SeriesID: it.SeriesID, Title: it.Title,
-			Number: it.Number, Year: it.Year, SeriesName: it.SeriesName,
-		})
-	}
 	writeJSON(w, missingIssuesResponse{
-		Items: out, Total: total, Page: page, PageSize: pageSize,
+		Items: items, Total: total, Page: page, PageSize: pageSize,
 	})
 }
 
@@ -114,8 +107,8 @@ type seriesJSON struct {
 	Title       string `json:"title"`
 	Publisher   string `json:"publisher"`
 	ComicVineID string `json:"comicvine_id"`
-	Monitored   bool   `json:"monitored"`
 	Path        string `json:"path"`
+	Monitored   bool   `json:"monitored"`
 }
 
 type issueJSON struct {
@@ -123,9 +116,9 @@ type issueJSON struct {
 	SeriesID  string `json:"series_id"`
 	Title     string `json:"title"`
 	Number    string `json:"number"`
+	Path      string `json:"path"`
 	Year      int32  `json:"year"`
 	Monitored bool   `json:"monitored"`
-	Path      string `json:"path"`
 }
 
 type seriesDetailJSON struct {
@@ -133,20 +126,11 @@ type seriesDetailJSON struct {
 	Issues []issueJSON `json:"issues"`
 }
 
-type missingIssueJSON struct {
-	IssueID    string `json:"issue_id"`
-	SeriesID   string `json:"series_id"`
-	Title      string `json:"title"`
-	Number     string `json:"number"`
-	Year       int32  `json:"year"`
-	SeriesName string `json:"series_name"`
-}
-
 type missingIssuesResponse struct {
-	Items    []missingIssueJSON `json:"items"`
-	Total    int               `json:"total"`
-	Page     int               `json:"page"`
-	PageSize int               `json:"page_size"`
+	Items    []MissingIssue `json:"items"`
+	Total    int            `json:"total"`
+	Page     int            `json:"page"`
+	PageSize int            `json:"page_size"`
 }
 
 func toSeriesJSON(s *Series) seriesJSON {

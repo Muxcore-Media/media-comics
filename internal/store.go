@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,8 +18,8 @@ type Series struct {
 	Title       string
 	Publisher   string
 	ComicVineID string
-	Monitored   bool
 	Path        string
+	Monitored   bool
 }
 
 type Issue struct {
@@ -25,9 +27,9 @@ type Issue struct {
 	SeriesID  string
 	Title     string
 	Number    string
+	Path      string
 	Year      int32
 	Monitored bool
-	Path      string
 }
 
 // Store persists the comics library in SQLite.
@@ -36,7 +38,7 @@ type Store struct {
 }
 
 // OpenStore opens or creates the SQLite database at path (WAL mode).
-func OpenStore(path string) (*Store, error) {
+func OpenStore(ctx context.Context, path string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("create db directory: %w", err)
 	}
@@ -45,20 +47,20 @@ func OpenStore(path string) (*Store, error) {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
 	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(`PRAGMA journal_mode=WAL`); err != nil {
-		db.Close()
+	if _, err := db.ExecContext(ctx, `PRAGMA journal_mode=WAL`); err != nil {
+		_ = db.Close()
 		return nil, fmt.Errorf("enable WAL: %w", err)
 	}
 	s := &Store{db: db}
-	if err := s.migrate(); err != nil {
-		db.Close()
+	if err := s.migrate(ctx); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 	return s, nil
 }
 
-func (s *Store) migrate() error {
-	_, err := s.db.Exec(`
+func (s *Store) migrate(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS series (
 			id            TEXT PRIMARY KEY,
 			title         TEXT NOT NULL,
@@ -95,7 +97,7 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) AddSeries(ser Series) (*Series, error) {
+func (s *Store) AddSeries(ctx context.Context, ser Series) (*Series, error) {
 	if strings.TrimSpace(ser.Title) == "" {
 		return nil, fmt.Errorf("series title required")
 	}
@@ -106,7 +108,7 @@ func (s *Store) AddSeries(ser Series) (*Series, error) {
 	if ser.Monitored {
 		monitored = 1
 	}
-	_, err := s.db.Exec(`
+	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO series (id, title, publisher, comicvine_id, monitored, path)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`, ser.ID, ser.Title, ser.Publisher, ser.ComicVineID, monitored, ser.Path)
@@ -117,21 +119,21 @@ func (s *Store) AddSeries(ser Series) (*Series, error) {
 	return &out, nil
 }
 
-func (s *Store) GetSeries(id string) (*Series, error) {
-	row := s.db.QueryRow(`
+func (s *Store) GetSeries(ctx context.Context, id string) (*Series, error) {
+	row := s.db.QueryRowContext(ctx, `
 		SELECT id, title, publisher, comicvine_id, monitored, path FROM series WHERE id = ?
 	`, id)
 	return scanSeries(row)
 }
 
-func (s *Store) ListSeries(query string) ([]*Series, error) {
-	rows, err := s.db.Query(`
+func (s *Store) ListSeries(ctx context.Context, query string) ([]*Series, error) {
+	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, title, publisher, comicvine_id, monitored, path FROM series ORDER BY title
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("list series: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	q := strings.ToLower(strings.TrimSpace(query))
 	out := make([]*Series, 0)
 	for rows.Next() {
@@ -147,8 +149,8 @@ func (s *Store) ListSeries(query string) ([]*Series, error) {
 	return out, rows.Err()
 }
 
-func (s *Store) RemoveSeries(id string) error {
-	res, err := s.db.Exec(`DELETE FROM series WHERE id = ?`, id)
+func (s *Store) RemoveSeries(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM series WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("delete series: %w", err)
 	}
@@ -160,17 +162,17 @@ func (s *Store) RemoveSeries(id string) error {
 		return fmt.Errorf("series %q not found", id)
 	}
 	// Cascades may be off without PRAGMA foreign_keys; clean children explicitly.
-	_, _ = s.db.Exec(`DELETE FROM issues WHERE series_id = ?`, id)
+	_, _ = s.db.ExecContext(ctx, `DELETE FROM issues WHERE series_id = ?`, id)
 	return nil
 }
 
-func (s *Store) AddIssue(iss Issue) (*Issue, error) {
+func (s *Store) AddIssue(ctx context.Context, iss Issue) (*Issue, error) {
 	if strings.TrimSpace(iss.Number) == "" && strings.TrimSpace(iss.Title) == "" {
 		return nil, fmt.Errorf("issue number or title required")
 	}
 	var exists string
-	err := s.db.QueryRow(`SELECT id FROM series WHERE id = ?`, iss.SeriesID).Scan(&exists)
-	if err == sql.ErrNoRows {
+	err := s.db.QueryRowContext(ctx, `SELECT id FROM series WHERE id = ?`, iss.SeriesID).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("series %q not found", iss.SeriesID)
 	}
 	if err != nil {
@@ -183,7 +185,7 @@ func (s *Store) AddIssue(iss Issue) (*Issue, error) {
 	if iss.Monitored {
 		monitored = 1
 	}
-	_, err = s.db.Exec(`
+	_, err = s.db.ExecContext(ctx, `
 		INSERT INTO issues (id, series_id, title, number, year, monitored, path)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, iss.ID, iss.SeriesID, iss.Title, iss.Number, iss.Year, monitored, iss.Path)
@@ -194,18 +196,18 @@ func (s *Store) AddIssue(iss Issue) (*Issue, error) {
 	return &out, nil
 }
 
-func (s *Store) ListIssues(seriesID string) ([]*Issue, error) {
+func (s *Store) ListIssues(ctx context.Context, seriesID string) ([]*Issue, error) {
 	var (
 		rows *sql.Rows
 		err  error
 	)
 	if seriesID != "" {
-		rows, err = s.db.Query(`
+		rows, err = s.db.QueryContext(ctx, `
 			SELECT id, series_id, title, number, year, monitored, path
 			FROM issues WHERE series_id = ? ORDER BY number, title
 		`, seriesID)
 	} else {
-		rows, err = s.db.Query(`
+		rows, err = s.db.QueryContext(ctx, `
 			SELECT id, series_id, title, number, year, monitored, path
 			FROM issues ORDER BY title
 		`)
@@ -213,7 +215,7 @@ func (s *Store) ListIssues(seriesID string) ([]*Issue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("list issues: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make([]*Issue, 0)
 	for rows.Next() {
 		iss, err := scanIssue(rows)
@@ -227,16 +229,16 @@ func (s *Store) ListIssues(seriesID string) ([]*Issue, error) {
 
 // MissingIssue is a monitored issue with no file on disk.
 type MissingIssue struct {
-	IssueID    string
-	SeriesID   string
-	Title      string
-	Number     string
-	Year       int32
-	SeriesName string
+	IssueID    string `json:"issue_id"`
+	SeriesID   string `json:"series_id"`
+	Title      string `json:"title"`
+	Number     string `json:"number"`
+	SeriesName string `json:"series_name"`
+	Year       int32  `json:"year"`
 }
 
 // ListMissingIssues returns monitored issues that have no path (file) yet.
-func (s *Store) ListMissingIssues(page, pageSize int) ([]MissingIssue, int, error) {
+func (s *Store) ListMissingIssues(ctx context.Context, page, pageSize int) ([]MissingIssue, int, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -245,7 +247,7 @@ func (s *Store) ListMissingIssues(page, pageSize int) ([]MissingIssue, int, erro
 	}
 	offset := (page - 1) * pageSize
 	var total int
-	if err := s.db.QueryRow(`
+	if err := s.db.QueryRowContext(ctx, `
 		SELECT COUNT(*)
 		FROM issues i
 		JOIN series s ON s.id = i.series_id
@@ -254,7 +256,7 @@ func (s *Store) ListMissingIssues(page, pageSize int) ([]MissingIssue, int, erro
 	`).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count missing issues: %w", err)
 	}
-	rows, err := s.db.Query(`
+	rows, err := s.db.QueryContext(ctx, `
 		SELECT i.id, i.series_id, i.title, i.number, i.year, s.title
 		FROM issues i
 		JOIN series s ON s.id = i.series_id
@@ -266,7 +268,7 @@ func (s *Store) ListMissingIssues(page, pageSize int) ([]MissingIssue, int, erro
 	if err != nil {
 		return nil, 0, fmt.Errorf("list missing issues: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make([]MissingIssue, 0)
 	for rows.Next() {
 		var item MissingIssue
@@ -278,8 +280,8 @@ func (s *Store) ListMissingIssues(page, pageSize int) ([]MissingIssue, int, erro
 	return out, total, rows.Err()
 }
 
-func (s *Store) findSeriesByTitle(title string) (*Series, error) {
-	row := s.db.QueryRow(`
+func (s *Store) findSeriesByTitle(ctx context.Context, title string) (*Series, error) {
+	row := s.db.QueryRowContext(ctx, `
 		SELECT id, title, publisher, comicvine_id, monitored, path FROM series
 		WHERE lower(title) = lower(?) LIMIT 1
 	`, title)
@@ -293,8 +295,8 @@ func (s *Store) findSeriesByTitle(title string) (*Series, error) {
 	return ser, nil
 }
 
-func (s *Store) findIssueByPath(path string) (*Issue, error) {
-	row := s.db.QueryRow(`
+func (s *Store) findIssueByPath(ctx context.Context, path string) (*Issue, error) {
+	row := s.db.QueryRowContext(ctx, `
 		SELECT id, series_id, title, number, year, monitored, path FROM issues WHERE path = ?
 	`, path)
 	iss, err := scanIssue(row)
@@ -307,9 +309,9 @@ func (s *Store) findIssueByPath(path string) (*Issue, error) {
 	return iss, nil
 }
 
-func (s *Store) upsertIssue(iss Issue) (*Issue, error) {
+func (s *Store) upsertIssue(ctx context.Context, iss Issue) (*Issue, error) {
 	if iss.Path != "" {
-		existing, err := s.findIssueByPath(iss.Path)
+		existing, err := s.findIssueByPath(ctx, iss.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -318,7 +320,7 @@ func (s *Store) upsertIssue(iss Issue) (*Issue, error) {
 			if iss.Monitored {
 				monitored = 1
 			}
-			_, err := s.db.Exec(`
+			_, err := s.db.ExecContext(ctx, `
 				UPDATE issues SET series_id = ?, title = ?, number = ?, year = ?, monitored = ?
 				WHERE id = ?
 			`, iss.SeriesID, iss.Title, iss.Number, iss.Year, monitored, existing.ID)
@@ -333,7 +335,7 @@ func (s *Store) upsertIssue(iss Issue) (*Issue, error) {
 			return existing, nil
 		}
 	}
-	return s.AddIssue(iss)
+	return s.AddIssue(ctx, iss)
 }
 
 type rowScanner interface {
@@ -344,7 +346,7 @@ func scanSeries(row rowScanner) (*Series, error) {
 	var ser Series
 	var monitored int
 	if err := row.Scan(&ser.ID, &ser.Title, &ser.Publisher, &ser.ComicVineID, &monitored, &ser.Path); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("series not found")
 		}
 		return nil, err
@@ -357,7 +359,7 @@ func scanIssue(row rowScanner) (*Issue, error) {
 	var iss Issue
 	var monitored int
 	if err := row.Scan(&iss.ID, &iss.SeriesID, &iss.Title, &iss.Number, &iss.Year, &monitored, &iss.Path); err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("issue not found")
 		}
 		return nil, err
