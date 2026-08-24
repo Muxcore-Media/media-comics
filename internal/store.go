@@ -225,6 +225,59 @@ func (s *Store) ListIssues(seriesID string) ([]*Issue, error) {
 	return out, rows.Err()
 }
 
+// MissingIssue is a monitored issue with no file on disk.
+type MissingIssue struct {
+	IssueID    string
+	SeriesID   string
+	Title      string
+	Number     string
+	Year       int32
+	SeriesName string
+}
+
+// ListMissingIssues returns monitored issues that have no path (file) yet.
+func (s *Store) ListMissingIssues(page, pageSize int) ([]MissingIssue, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 200 {
+		pageSize = 100
+	}
+	offset := (page - 1) * pageSize
+	var total int
+	if err := s.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM issues i
+		JOIN series s ON s.id = i.series_id
+		WHERE i.monitored = 1 AND s.monitored = 1
+		  AND (i.path = '' OR i.path IS NULL)
+	`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count missing issues: %w", err)
+	}
+	rows, err := s.db.Query(`
+		SELECT i.id, i.series_id, i.title, i.number, i.year, s.title
+		FROM issues i
+		JOIN series s ON s.id = i.series_id
+		WHERE i.monitored = 1 AND s.monitored = 1
+		  AND (i.path = '' OR i.path IS NULL)
+		ORDER BY s.title, i.number, i.title
+		LIMIT ? OFFSET ?
+	`, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list missing issues: %w", err)
+	}
+	defer rows.Close()
+	out := make([]MissingIssue, 0)
+	for rows.Next() {
+		var item MissingIssue
+		if err := rows.Scan(&item.IssueID, &item.SeriesID, &item.Title, &item.Number, &item.Year, &item.SeriesName); err != nil {
+			return nil, 0, err
+		}
+		out = append(out, item)
+	}
+	return out, total, rows.Err()
+}
+
 func (s *Store) findSeriesByTitle(title string) (*Series, error) {
 	row := s.db.QueryRow(`
 		SELECT id, title, publisher, comicvine_id, monitored, path FROM series

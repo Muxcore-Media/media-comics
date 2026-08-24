@@ -3,6 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -10,6 +11,7 @@ func (m *Module) registerComicsHTTPAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/series", m.handleListSeriesHTTP)
 	mux.HandleFunc("GET /api/series/{id}", m.handleGetSeriesHTTP)
 	mux.HandleFunc("GET /api/issues", m.handleListIssuesHTTP)
+	mux.HandleFunc("GET /api/missing", m.handleListMissingHTTP)
 }
 
 func (m *Module) handleListSeriesHTTP(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +79,36 @@ func (m *Module) handleListIssuesHTTP(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out)
 }
 
+func (m *Module) handleListMissingHTTP(w http.ResponseWriter, r *http.Request) {
+	if m.store == nil {
+		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
+		return
+	}
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 100
+	}
+	items, total, err := m.store.ListMissingIssues(page, pageSize)
+	if err != nil {
+		http.Error(w, fmtJSONError(err), http.StatusInternalServerError)
+		return
+	}
+	out := make([]missingIssueJSON, 0, len(items))
+	for _, it := range items {
+		out = append(out, missingIssueJSON{
+			IssueID: it.IssueID, SeriesID: it.SeriesID, Title: it.Title,
+			Number: it.Number, Year: it.Year, SeriesName: it.SeriesName,
+		})
+	}
+	writeJSON(w, missingIssuesResponse{
+		Items: out, Total: total, Page: page, PageSize: pageSize,
+	})
+}
+
 type seriesJSON struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -99,6 +131,22 @@ type issueJSON struct {
 type seriesDetailJSON struct {
 	Series seriesJSON  `json:"series"`
 	Issues []issueJSON `json:"issues"`
+}
+
+type missingIssueJSON struct {
+	IssueID    string `json:"issue_id"`
+	SeriesID   string `json:"series_id"`
+	Title      string `json:"title"`
+	Number     string `json:"number"`
+	Year       int32  `json:"year"`
+	SeriesName string `json:"series_name"`
+}
+
+type missingIssuesResponse struct {
+	Items    []missingIssueJSON `json:"items"`
+	Total    int               `json:"total"`
+	Page     int               `json:"page"`
+	PageSize int               `json:"page_size"`
 }
 
 func toSeriesJSON(s *Series) seriesJSON {
