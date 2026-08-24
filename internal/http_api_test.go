@@ -26,7 +26,7 @@ func TestHTTPListSeriesFixtures(t *testing.T) {
 	if err := m.Init(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.ScanLibrary(); err != nil {
+	if _, err := m.ScanLibrary(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 	if err := m.Start(t.Context()); err != nil {
