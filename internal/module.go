@@ -62,7 +62,7 @@ func NewModule(cfg Config) *Module {
 		cfg.DataDir = "./data"
 	}
 	if cfg.LibraryDir == "" {
-		cfg.LibraryDir = filepath.Join(cfg.DataDir, "comics")
+		cfg.LibraryDir = cfg.DataDir
 	}
 	return &Module{
 		id: cfg.ID, grpcAddr: cfg.GRPCAddr, httpAddr: cfg.HTTPAddr,
@@ -76,7 +76,7 @@ func (m *Module) Info() contracts.ModuleInfo {
 		Roles:        []string{"media", "comics"},
 		Description:  "Manga/comic series + issue library manager with SQLite persistence",
 		Capabilities: []string{"media.comics", "comics", "manga", "settings"},
-		HTTPAddr:     m.grpcAddr,
+		HTTPAddr:     m.httpAddr,
 	}
 }
 
@@ -138,6 +138,9 @@ func (m *Module) Start(ctx context.Context) error {
 			slog.Error("health serve", "error", serveErr)
 		}
 	}()
+	if _, err := m.ScanLibrary(ctx); err != nil {
+		return fmt.Errorf("startup library scan: %w", err)
+	}
 	return nil
 }
 
@@ -146,6 +149,40 @@ func (m *Module) GRPCListenAddr() string { return m.grpcAddr }
 
 // HTTPListenAddr returns the bound health/HTTP API address after Start.
 func (m *Module) HTTPListenAddr() string { return m.httpAddr }
+
+func (m *Module) libraryRoot() string {
+	m.cfgMu.RLock()
+	defer m.cfgMu.RUnlock()
+	return m.libraryDir
+}
+
+func (m *Module) resolveLibraryPath(path string) (string, error) {
+	return pathUnderRoot(path, m.libraryRoot())
+}
+
+func (m *Module) deleteFileIfInLibrary(path string) error {
+	if path == "" {
+		return nil
+	}
+	abs, err := m.resolveLibraryPath(path)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	if info.IsDir() {
+		return nil
+	}
+	if err := os.Remove(abs); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("delete file %s: %w", abs, err)
+	}
+	return nil
+}
 
 func (m *Module) Stop(ctx context.Context) error {
 	if m.grpcSrv != nil {
@@ -165,7 +202,7 @@ func (m *Module) Health(ctx context.Context) error {
 	if m.store == nil {
 		return fmt.Errorf("store not open")
 	}
-	return nil
+	return m.store.Ping(ctx)
 }
 
 // ScanLibrary scans the configured library root into SQLite.
@@ -216,7 +253,48 @@ func (s *comicServer) ListSeries(ctx context.Context, req *comicsv1.ListSeriesRe
 	return &comicsv1.ListSeriesResponse{Series: out}, nil
 }
 
+func (s *comicServer) UpdateSeries(ctx context.Context, req *comicsv1.UpdateSeriesRequest) (*comicsv1.UpdateSeriesResponse, error) {
+	upd := SeriesUpdate{}
+	if req.Title != nil {
+		upd.Title = req.Title
+	}
+	if req.Publisher != nil {
+		upd.Publisher = req.Publisher
+	}
+	if req.Monitored != nil {
+		upd.Monitored = req.Monitored
+	}
+	if req.Path != nil {
+		upd.Path = req.Path
+	}
+	ser, err := s.m.store.UpdateSeries(ctx, req.GetId(), upd)
+	if err != nil {
+		return nil, err
+	}
+	return &comicsv1.UpdateSeriesResponse{Series: toPBSeries(ser)}, nil
+}
+
 func (s *comicServer) RemoveSeries(ctx context.Context, req *comicsv1.RemoveSeriesRequest) (*comicsv1.RemoveSeriesResponse, error) {
+	if req.GetDeleteFiles() {
+		ser, err := s.m.store.GetSeries(ctx, req.GetId())
+		if err != nil {
+			return nil, err
+		}
+		paths, err := s.m.store.ListSeriesIssuePaths(ctx, req.GetId())
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range paths {
+			if err := s.m.deleteFileIfInLibrary(p); err != nil {
+				return nil, err
+			}
+		}
+		if ser.Path != "" {
+			if err := s.m.deleteFileIfInLibrary(ser.Path); err != nil {
+				return nil, err
+			}
+		}
+	}
 	if err := s.m.store.RemoveSeries(ctx, req.GetId()); err != nil {
 		return nil, err
 	}
@@ -234,6 +312,14 @@ func (s *comicServer) AddIssue(ctx context.Context, req *comicsv1.AddIssueReques
 	return &comicsv1.AddIssueResponse{Issue: toPBIssue(iss)}, nil
 }
 
+func (s *comicServer) GetIssue(ctx context.Context, req *comicsv1.GetIssueRequest) (*comicsv1.GetIssueResponse, error) {
+	iss, err := s.m.store.GetIssue(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+	return &comicsv1.GetIssueResponse{Issue: toPBIssue(iss)}, nil
+}
+
 func (s *comicServer) ListIssues(ctx context.Context, req *comicsv1.ListIssuesRequest) (*comicsv1.ListIssuesResponse, error) {
 	items, err := s.m.store.ListIssues(ctx, req.GetSeriesId())
 	if err != nil {
@@ -244,6 +330,101 @@ func (s *comicServer) ListIssues(ctx context.Context, req *comicsv1.ListIssuesRe
 		out = append(out, toPBIssue(iss))
 	}
 	return &comicsv1.ListIssuesResponse{Issues: out}, nil
+}
+
+func (s *comicServer) UpdateIssue(ctx context.Context, req *comicsv1.UpdateIssueRequest) (*comicsv1.UpdateIssueResponse, error) {
+	upd := IssueUpdate{}
+	if req.Title != nil {
+		upd.Title = req.Title
+	}
+	if req.Number != nil {
+		upd.Number = req.Number
+	}
+	if req.Year != nil {
+		upd.Year = req.Year
+	}
+	if req.Monitored != nil {
+		upd.Monitored = req.Monitored
+	}
+	if req.Path != nil {
+		upd.Path = req.Path
+	}
+	iss, err := s.m.store.UpdateIssue(ctx, req.GetId(), upd)
+	if err != nil {
+		return nil, err
+	}
+	return &comicsv1.UpdateIssueResponse{Issue: toPBIssue(iss)}, nil
+}
+
+func (s *comicServer) RemoveIssue(ctx context.Context, req *comicsv1.RemoveIssueRequest) (*comicsv1.RemoveIssueResponse, error) {
+	if req.GetDeleteFiles() {
+		iss, err := s.m.store.GetIssue(ctx, req.GetId())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.m.deleteFileIfInLibrary(iss.Path); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.m.store.RemoveIssue(ctx, req.GetId()); err != nil {
+		return nil, err
+	}
+	return &comicsv1.RemoveIssueResponse{Success: true}, nil
+}
+
+func (s *comicServer) ScanLibrary(ctx context.Context, _ *comicsv1.ScanLibraryRequest) (*comicsv1.ScanLibraryResponse, error) {
+	res, err := s.m.ScanLibrary(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &comicsv1.ScanLibraryResponse{
+		FilesFound: int32(res.FilesFound), FilesImported: int32(res.FilesImported),
+		FilesSkipped: int32(res.FilesSkipped), PathsCleared: int32(res.PathsCleared),
+	}, nil
+}
+
+func (s *comicServer) ListMissing(ctx context.Context, req *comicsv1.ListMissingRequest) (*comicsv1.ListMissingResponse, error) {
+	page := int(req.GetPage())
+	pageSize := int(req.GetPageSize())
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 100
+	}
+	items, total, err := s.m.store.ListMissingIssues(ctx, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*comicsv1.MissingIssue, 0, len(items))
+	for _, item := range items {
+		out = append(out, &comicsv1.MissingIssue{
+			IssueId: item.IssueID, SeriesId: item.SeriesID, Title: item.Title,
+			Number: item.Number, SeriesName: item.SeriesName, Year: item.Year,
+		})
+	}
+	return &comicsv1.ListMissingResponse{
+		Items: out, Total: int32(total), Page: int32(page), PageSize: int32(pageSize),
+	}, nil
+}
+
+func (s *comicServer) ImportIssue(ctx context.Context, req *comicsv1.ImportIssueRequest) (*comicsv1.ImportIssueResponse, error) {
+	abs, err := s.m.resolveLibraryPath(req.GetPath())
+	if err != nil {
+		return nil, err
+	}
+	info, err := os.Stat(abs)
+	if err != nil {
+		return nil, fmt.Errorf("import path: %w", err)
+	}
+	if info.IsDir() {
+		return nil, fmt.Errorf("import path is a directory")
+	}
+	iss, err := s.m.store.ImportIssuePath(ctx, req.GetIssueId(), abs)
+	if err != nil {
+		return nil, err
+	}
+	return &comicsv1.ImportIssueResponse{Issue: toPBIssue(iss)}, nil
 }
 
 func toPBSeries(s *Series) *comicsv1.Series {
@@ -257,5 +438,6 @@ func toPBIssue(i *Issue) *comicsv1.Issue {
 	return &comicsv1.Issue{
 		Id: i.ID, SeriesId: i.SeriesID, Title: i.Title,
 		Number: i.Number, Year: i.Year, Monitored: i.Monitored,
+		Path: i.Path, HasFile: issueHasFile(i.Path),
 	}
 }

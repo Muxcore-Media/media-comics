@@ -97,6 +97,14 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+// Ping verifies the SQLite connection.
+func (s *Store) Ping(ctx context.Context) error {
+	if s == nil || s.db == nil {
+		return fmt.Errorf("store not open")
+	}
+	return s.db.QueryRowContext(ctx, `SELECT 1`).Scan(new(int))
+}
+
 func (s *Store) AddSeries(ctx context.Context, ser Series) (*Series, error) {
 	if strings.TrimSpace(ser.Title) == "" {
 		return nil, fmt.Errorf("series title required")
@@ -164,6 +172,144 @@ func (s *Store) RemoveSeries(ctx context.Context, id string) error {
 	// Cascades may be off without PRAGMA foreign_keys; clean children explicitly.
 	_, _ = s.db.ExecContext(ctx, `DELETE FROM issues WHERE series_id = ?`, id)
 	return nil
+}
+
+type SeriesUpdate struct {
+	Title     *string
+	Publisher *string
+	Monitored *bool
+	Path      *string
+}
+
+type IssueUpdate struct {
+	Title     *string
+	Number    *string
+	Year      *int32
+	Monitored *bool
+	Path      *string
+}
+
+func (s *Store) UpdateSeries(ctx context.Context, id string, upd SeriesUpdate) (*Series, error) {
+	cur, err := s.GetSeries(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if upd.Title != nil {
+		if strings.TrimSpace(*upd.Title) == "" {
+			return nil, fmt.Errorf("series title required")
+		}
+		cur.Title = *upd.Title
+	}
+	if upd.Publisher != nil {
+		cur.Publisher = *upd.Publisher
+	}
+	if upd.Monitored != nil {
+		cur.Monitored = *upd.Monitored
+	}
+	if upd.Path != nil {
+		cur.Path = *upd.Path
+	}
+	monitored := 0
+	if cur.Monitored {
+		monitored = 1
+	}
+	_, err = s.db.ExecContext(ctx, `
+		UPDATE series SET title = ?, publisher = ?, monitored = ?, path = ?
+		WHERE id = ?
+	`, cur.Title, cur.Publisher, monitored, cur.Path, id)
+	if err != nil {
+		return nil, fmt.Errorf("update series: %w", err)
+	}
+	return cur, nil
+}
+
+func (s *Store) GetIssue(ctx context.Context, id string) (*Issue, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, series_id, title, number, year, monitored, path FROM issues WHERE id = ?
+	`, id)
+	return scanIssue(row)
+}
+
+func (s *Store) UpdateIssue(ctx context.Context, id string, upd IssueUpdate) (*Issue, error) {
+	cur, err := s.GetIssue(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if upd.Title != nil {
+		cur.Title = *upd.Title
+	}
+	if upd.Number != nil {
+		cur.Number = *upd.Number
+	}
+	if upd.Year != nil {
+		cur.Year = *upd.Year
+	}
+	if upd.Monitored != nil {
+		cur.Monitored = *upd.Monitored
+	}
+	if upd.Path != nil {
+		cur.Path = *upd.Path
+	}
+	monitored := 0
+	if cur.Monitored {
+		monitored = 1
+	}
+	_, err = s.db.ExecContext(ctx, `
+		UPDATE issues SET title = ?, number = ?, year = ?, monitored = ?, path = ?
+		WHERE id = ?
+	`, cur.Title, cur.Number, cur.Year, monitored, cur.Path, id)
+	if err != nil {
+		return nil, fmt.Errorf("update issue: %w", err)
+	}
+	return cur, nil
+}
+
+func (s *Store) RemoveIssue(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM issues WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete issue: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("issue %q not found", id)
+	}
+	return nil
+}
+
+func (s *Store) ImportIssuePath(ctx context.Context, issueID, absPath string) (*Issue, error) {
+	iss, err := s.GetIssue(ctx, issueID)
+	if err != nil {
+		return nil, err
+	}
+	if issueHasFile(iss.Path) {
+		return nil, fmt.Errorf("issue %q already has a file", issueID)
+	}
+	existing, err := s.findIssueByPath(ctx, absPath)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil && existing.ID != issueID {
+		return nil, fmt.Errorf("path already attached to issue %q", existing.ID)
+	}
+	path := absPath
+	return s.UpdateIssue(ctx, issueID, IssueUpdate{Path: &path})
+}
+
+func (s *Store) ListSeriesIssuePaths(ctx context.Context, seriesID string) ([]string, error) {
+	issues, err := s.ListIssues(ctx, seriesID)
+	if err != nil {
+		return nil, err
+	}
+	paths := make([]string, 0, len(issues))
+	for _, iss := range issues {
+		if iss.Path != "" {
+			paths = append(paths, iss.Path)
+		}
+	}
+	return paths, nil
 }
 
 func (s *Store) AddIssue(ctx context.Context, iss Issue) (*Issue, error) {
@@ -237,7 +383,7 @@ type MissingIssue struct {
 	Year       int32  `json:"year"`
 }
 
-// ListMissingIssues returns monitored issues that have no path (file) yet.
+// ListMissingIssues returns monitored issues with no file on disk.
 func (s *Store) ListMissingIssues(ctx context.Context, page, pageSize int) ([]MissingIssue, int, error) {
 	if page < 1 {
 		page = 1
@@ -245,39 +391,42 @@ func (s *Store) ListMissingIssues(ctx context.Context, page, pageSize int) ([]Mi
 	if pageSize <= 0 || pageSize > 200 {
 		pageSize = 100
 	}
-	offset := (page - 1) * pageSize
-	var total int
-	if err := s.db.QueryRowContext(ctx, `
-		SELECT COUNT(*)
-		FROM issues i
-		JOIN series s ON s.id = i.series_id
-		WHERE i.monitored = 1 AND s.monitored = 1
-		  AND (i.path = '' OR i.path IS NULL)
-	`).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("count missing issues: %w", err)
-	}
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT i.id, i.series_id, i.title, i.number, i.year, s.title
+		SELECT i.id, i.series_id, i.title, i.number, i.year, s.title, i.path
 		FROM issues i
 		JOIN series s ON s.id = i.series_id
 		WHERE i.monitored = 1 AND s.monitored = 1
-		  AND (i.path = '' OR i.path IS NULL)
 		ORDER BY s.title, i.number, i.title
-		LIMIT ? OFFSET ?
-	`, pageSize, offset)
+	`)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list missing issues: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
-	out := make([]MissingIssue, 0)
+	all := make([]MissingIssue, 0)
 	for rows.Next() {
 		var item MissingIssue
-		if err := rows.Scan(&item.IssueID, &item.SeriesID, &item.Title, &item.Number, &item.Year, &item.SeriesName); err != nil {
+		var path string
+		if err := rows.Scan(&item.IssueID, &item.SeriesID, &item.Title, &item.Number, &item.Year, &item.SeriesName, &path); err != nil {
 			return nil, 0, err
 		}
-		out = append(out, item)
+		if issueHasFile(path) {
+			continue
+		}
+		all = append(all, item)
 	}
-	return out, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	total := len(all)
+	offset := (page - 1) * pageSize
+	if offset >= total {
+		return []MissingIssue{}, total, nil
+	}
+	end := offset + pageSize
+	if end > total {
+		end = total
+	}
+	return all[offset:end], total, nil
 }
 
 func (s *Store) findSeriesByTitle(ctx context.Context, title string) (*Series, error) {

@@ -25,12 +25,14 @@ type ScanResult struct {
 	FilesFound    int
 	FilesImported int
 	FilesSkipped  int
+	PathsCleared  int
 }
 
 // ScanLibraryRoot walks root for comic archives and upserts series/issues.
 // Layout expected: Series/issue.ext (or Series/subdir/issue.ext — series is the
 // first path segment under root). Metadata is derived only from path/filename —
-// no network lookups.
+// no network lookups. Issues whose files disappeared since the last scan have
+// their path cleared so they surface as missing.
 func (s *Store) ScanLibraryRoot(ctx context.Context, root string) (*ScanResult, error) {
 	root, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
@@ -45,6 +47,7 @@ func (s *Store) ScanLibraryRoot(ctx context.Context, root string) (*ScanResult, 
 	}
 
 	res := &ScanResult{}
+	foundPaths := make(map[string]struct{})
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -56,9 +59,14 @@ func (s *Store) ScanLibraryRoot(ctx context.Context, root string) (*ScanResult, 
 		if _, ok := comicExts[ext]; !ok {
 			return nil
 		}
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		foundPaths[absPath] = struct{}{}
 		res.FilesFound++
-		seriesTitle, number, issueTitle := inferComicFromPath(root, path)
-		imported, importErr := s.importComicFile(ctx, seriesTitle, number, issueTitle, path)
+		seriesTitle, number, issueTitle := inferComicFromPath(root, absPath)
+		imported, importErr := s.importComicFile(ctx, seriesTitle, number, issueTitle, absPath)
 		if importErr != nil {
 			return importErr
 		}
@@ -72,7 +80,51 @@ func (s *Store) ScanLibraryRoot(ctx context.Context, root string) (*ScanResult, 
 	if err != nil {
 		return nil, err
 	}
+	cleared, err := s.reconcileMissingPaths(ctx, foundPaths)
+	if err != nil {
+		return nil, err
+	}
+	res.PathsCleared = cleared
 	return res, nil
+}
+
+func (s *Store) reconcileMissingPaths(ctx context.Context, foundPaths map[string]struct{}) (int, error) {
+	issues, err := s.ListIssues(ctx, "")
+	if err != nil {
+		return 0, err
+	}
+	cleared := 0
+	for _, iss := range issues {
+		if iss.Path == "" {
+			continue
+		}
+		if _, ok := foundPaths[iss.Path]; ok {
+			continue
+		}
+		if issueHasFile(iss.Path) {
+			continue
+		}
+		if err := s.clearIssuePath(ctx, iss.ID); err != nil {
+			return cleared, err
+		}
+		cleared++
+	}
+	return cleared, nil
+}
+
+func (s *Store) clearIssuePath(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE issues SET path = '' WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("clear issue path: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("issue %q not found", id)
+	}
+	return nil
 }
 
 func (s *Store) importComicFile(ctx context.Context, seriesTitle, number, issueTitle, absPath string) (imported bool, err error) {
