@@ -12,6 +12,9 @@ func (m *Module) registerComicsHTTPAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/series/{id}", m.handleGetSeriesHTTP)
 	mux.HandleFunc("GET /api/issues", m.handleListIssuesHTTP)
 	mux.HandleFunc("GET /api/missing", m.handleListMissingHTTP)
+	mux.HandleFunc("POST /api/scan", m.handleScanHTTP)
+	mux.HandleFunc("POST /api/issues/{id}/import", m.handleImportIssueHTTP)
+	mux.HandleFunc("GET /api/issues/{id}/stream", m.handleStreamIssueHTTP)
 }
 
 func (m *Module) handleListSeriesHTTP(w http.ResponseWriter, r *http.Request) {
@@ -102,6 +105,87 @@ func (m *Module) handleListMissingHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (m *Module) handleScanHTTP(w http.ResponseWriter, r *http.Request) {
+	if m.store == nil {
+		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
+		return
+	}
+	res, err := m.ScanLibrary(r.Context())
+	if err != nil {
+		http.Error(w, fmtJSONError(err), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, scanResultJSON{
+		FilesFound: res.FilesFound, FilesImported: res.FilesImported,
+		FilesSkipped: res.FilesSkipped, PathsCleared: res.PathsCleared,
+	})
+}
+
+func (m *Module) handleImportIssueHTTP(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		return
+	}
+	if m.store == nil {
+		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
+		return
+	}
+	var body struct {
+		Path string `json:"path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"invalid json body"}`, http.StatusBadRequest)
+		return
+	}
+	abs, err := m.resolveLibraryPath(body.Path)
+	if err != nil {
+		http.Error(w, fmtJSONError(err), http.StatusBadRequest)
+		return
+	}
+	iss, err := m.store.ImportIssuePath(r.Context(), id, abs)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	writeJSON(w, toIssueJSON(iss))
+}
+
+func (m *Module) handleStreamIssueHTTP(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		return
+	}
+	if m.store == nil {
+		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
+		return
+	}
+	iss, err := m.store.GetIssue(r.Context(), id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	if iss.Path == "" {
+		http.Error(w, `{"error":"issue has no file"}`, http.StatusNotFound)
+		return
+	}
+	abs, err := m.resolveLibraryPath(iss.Path)
+	if err != nil {
+		http.Error(w, fmtJSONError(err), http.StatusNotFound)
+		return
+	}
+	http.ServeFile(w, r, abs)
+}
+
 type seriesJSON struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -119,6 +203,7 @@ type issueJSON struct {
 	Path      string `json:"path"`
 	Year      int32  `json:"year"`
 	Monitored bool   `json:"monitored"`
+	HasFile   bool   `json:"has_file"`
 }
 
 type seriesDetailJSON struct {
@@ -133,6 +218,13 @@ type missingIssuesResponse struct {
 	PageSize int            `json:"page_size"`
 }
 
+type scanResultJSON struct {
+	FilesFound    int `json:"files_found"`
+	FilesImported int `json:"files_imported"`
+	FilesSkipped  int `json:"files_skipped"`
+	PathsCleared  int `json:"paths_cleared"`
+}
+
 func toSeriesJSON(s *Series) seriesJSON {
 	return seriesJSON{
 		ID: s.ID, Title: s.Title, Publisher: s.Publisher,
@@ -143,7 +235,8 @@ func toSeriesJSON(s *Series) seriesJSON {
 func toIssueJSON(i *Issue) issueJSON {
 	return issueJSON{
 		ID: i.ID, SeriesID: i.SeriesID, Title: i.Title,
-		Number: i.Number, Year: i.Year, Monitored: i.Monitored, Path: i.Path,
+		Number: i.Number, Year: i.Year, Monitored: i.Monitored,
+		Path: i.Path, HasFile: issueHasFile(i.Path),
 	}
 }
 

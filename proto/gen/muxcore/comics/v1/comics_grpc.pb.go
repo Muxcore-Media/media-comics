@@ -22,23 +22,37 @@ const (
 	ComicManagementService_AddSeries_FullMethodName    = "/muxcore.comics.v1.ComicManagementService/AddSeries"
 	ComicManagementService_GetSeries_FullMethodName    = "/muxcore.comics.v1.ComicManagementService/GetSeries"
 	ComicManagementService_ListSeries_FullMethodName   = "/muxcore.comics.v1.ComicManagementService/ListSeries"
+	ComicManagementService_UpdateSeries_FullMethodName = "/muxcore.comics.v1.ComicManagementService/UpdateSeries"
 	ComicManagementService_RemoveSeries_FullMethodName = "/muxcore.comics.v1.ComicManagementService/RemoveSeries"
 	ComicManagementService_AddIssue_FullMethodName     = "/muxcore.comics.v1.ComicManagementService/AddIssue"
+	ComicManagementService_GetIssue_FullMethodName     = "/muxcore.comics.v1.ComicManagementService/GetIssue"
 	ComicManagementService_ListIssues_FullMethodName   = "/muxcore.comics.v1.ComicManagementService/ListIssues"
+	ComicManagementService_UpdateIssue_FullMethodName  = "/muxcore.comics.v1.ComicManagementService/UpdateIssue"
+	ComicManagementService_RemoveIssue_FullMethodName  = "/muxcore.comics.v1.ComicManagementService/RemoveIssue"
+	ComicManagementService_ScanLibrary_FullMethodName  = "/muxcore.comics.v1.ComicManagementService/ScanLibrary"
+	ComicManagementService_ListMissing_FullMethodName  = "/muxcore.comics.v1.ComicManagementService/ListMissing"
+	ComicManagementService_ImportIssue_FullMethodName  = "/muxcore.comics.v1.ComicManagementService/ImportIssue"
 )
 
 // ComicManagementServiceClient is the client API for ComicManagementService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// ComicManagementService manages manga/comic series and issues (scaffold).
+// ComicManagementService manages manga/comic series and issues.
 type ComicManagementServiceClient interface {
 	AddSeries(ctx context.Context, in *AddSeriesRequest, opts ...grpc.CallOption) (*AddSeriesResponse, error)
 	GetSeries(ctx context.Context, in *GetSeriesRequest, opts ...grpc.CallOption) (*GetSeriesResponse, error)
 	ListSeries(ctx context.Context, in *ListSeriesRequest, opts ...grpc.CallOption) (*ListSeriesResponse, error)
+	UpdateSeries(ctx context.Context, in *UpdateSeriesRequest, opts ...grpc.CallOption) (*UpdateSeriesResponse, error)
 	RemoveSeries(ctx context.Context, in *RemoveSeriesRequest, opts ...grpc.CallOption) (*RemoveSeriesResponse, error)
 	AddIssue(ctx context.Context, in *AddIssueRequest, opts ...grpc.CallOption) (*AddIssueResponse, error)
+	GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*GetIssueResponse, error)
 	ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error)
+	UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*UpdateIssueResponse, error)
+	RemoveIssue(ctx context.Context, in *RemoveIssueRequest, opts ...grpc.CallOption) (*RemoveIssueResponse, error)
+	ScanLibrary(ctx context.Context, in *ScanLibraryRequest, opts ...grpc.CallOption) (*ScanLibraryResponse, error)
+	ListMissing(ctx context.Context, in *ListMissingRequest, opts ...grpc.CallOption) (*ListMissingResponse, error)
+	ImportIssue(ctx context.Context, in *ImportIssueRequest, opts ...grpc.CallOption) (*ImportIssueResponse, error)
 }
 
 type comicManagementServiceClient struct {
@@ -79,6 +93,16 @@ func (c *comicManagementServiceClient) ListSeries(ctx context.Context, in *ListS
 	return out, nil
 }
 
+func (c *comicManagementServiceClient) UpdateSeries(ctx context.Context, in *UpdateSeriesRequest, opts ...grpc.CallOption) (*UpdateSeriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateSeriesResponse)
+	err := c.cc.Invoke(ctx, ComicManagementService_UpdateSeries_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *comicManagementServiceClient) RemoveSeries(ctx context.Context, in *RemoveSeriesRequest, opts ...grpc.CallOption) (*RemoveSeriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RemoveSeriesResponse)
@@ -99,6 +123,16 @@ func (c *comicManagementServiceClient) AddIssue(ctx context.Context, in *AddIssu
 	return out, nil
 }
 
+func (c *comicManagementServiceClient) GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*GetIssueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetIssueResponse)
+	err := c.cc.Invoke(ctx, ComicManagementService_GetIssue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *comicManagementServiceClient) ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListIssuesResponse)
@@ -109,18 +143,75 @@ func (c *comicManagementServiceClient) ListIssues(ctx context.Context, in *ListI
 	return out, nil
 }
 
+func (c *comicManagementServiceClient) UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*UpdateIssueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateIssueResponse)
+	err := c.cc.Invoke(ctx, ComicManagementService_UpdateIssue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *comicManagementServiceClient) RemoveIssue(ctx context.Context, in *RemoveIssueRequest, opts ...grpc.CallOption) (*RemoveIssueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveIssueResponse)
+	err := c.cc.Invoke(ctx, ComicManagementService_RemoveIssue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *comicManagementServiceClient) ScanLibrary(ctx context.Context, in *ScanLibraryRequest, opts ...grpc.CallOption) (*ScanLibraryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ScanLibraryResponse)
+	err := c.cc.Invoke(ctx, ComicManagementService_ScanLibrary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *comicManagementServiceClient) ListMissing(ctx context.Context, in *ListMissingRequest, opts ...grpc.CallOption) (*ListMissingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMissingResponse)
+	err := c.cc.Invoke(ctx, ComicManagementService_ListMissing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *comicManagementServiceClient) ImportIssue(ctx context.Context, in *ImportIssueRequest, opts ...grpc.CallOption) (*ImportIssueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ImportIssueResponse)
+	err := c.cc.Invoke(ctx, ComicManagementService_ImportIssue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ComicManagementServiceServer is the server API for ComicManagementService service.
 // All implementations must embed UnimplementedComicManagementServiceServer
 // for forward compatibility.
 //
-// ComicManagementService manages manga/comic series and issues (scaffold).
+// ComicManagementService manages manga/comic series and issues.
 type ComicManagementServiceServer interface {
 	AddSeries(context.Context, *AddSeriesRequest) (*AddSeriesResponse, error)
 	GetSeries(context.Context, *GetSeriesRequest) (*GetSeriesResponse, error)
 	ListSeries(context.Context, *ListSeriesRequest) (*ListSeriesResponse, error)
+	UpdateSeries(context.Context, *UpdateSeriesRequest) (*UpdateSeriesResponse, error)
 	RemoveSeries(context.Context, *RemoveSeriesRequest) (*RemoveSeriesResponse, error)
 	AddIssue(context.Context, *AddIssueRequest) (*AddIssueResponse, error)
+	GetIssue(context.Context, *GetIssueRequest) (*GetIssueResponse, error)
 	ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error)
+	UpdateIssue(context.Context, *UpdateIssueRequest) (*UpdateIssueResponse, error)
+	RemoveIssue(context.Context, *RemoveIssueRequest) (*RemoveIssueResponse, error)
+	ScanLibrary(context.Context, *ScanLibraryRequest) (*ScanLibraryResponse, error)
+	ListMissing(context.Context, *ListMissingRequest) (*ListMissingResponse, error)
+	ImportIssue(context.Context, *ImportIssueRequest) (*ImportIssueResponse, error)
 	mustEmbedUnimplementedComicManagementServiceServer()
 }
 
@@ -140,14 +231,35 @@ func (UnimplementedComicManagementServiceServer) GetSeries(context.Context, *Get
 func (UnimplementedComicManagementServiceServer) ListSeries(context.Context, *ListSeriesRequest) (*ListSeriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListSeries not implemented")
 }
+func (UnimplementedComicManagementServiceServer) UpdateSeries(context.Context, *UpdateSeriesRequest) (*UpdateSeriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateSeries not implemented")
+}
 func (UnimplementedComicManagementServiceServer) RemoveSeries(context.Context, *RemoveSeriesRequest) (*RemoveSeriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemoveSeries not implemented")
 }
 func (UnimplementedComicManagementServiceServer) AddIssue(context.Context, *AddIssueRequest) (*AddIssueResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddIssue not implemented")
 }
+func (UnimplementedComicManagementServiceServer) GetIssue(context.Context, *GetIssueRequest) (*GetIssueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetIssue not implemented")
+}
 func (UnimplementedComicManagementServiceServer) ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListIssues not implemented")
+}
+func (UnimplementedComicManagementServiceServer) UpdateIssue(context.Context, *UpdateIssueRequest) (*UpdateIssueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateIssue not implemented")
+}
+func (UnimplementedComicManagementServiceServer) RemoveIssue(context.Context, *RemoveIssueRequest) (*RemoveIssueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveIssue not implemented")
+}
+func (UnimplementedComicManagementServiceServer) ScanLibrary(context.Context, *ScanLibraryRequest) (*ScanLibraryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ScanLibrary not implemented")
+}
+func (UnimplementedComicManagementServiceServer) ListMissing(context.Context, *ListMissingRequest) (*ListMissingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListMissing not implemented")
+}
+func (UnimplementedComicManagementServiceServer) ImportIssue(context.Context, *ImportIssueRequest) (*ImportIssueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ImportIssue not implemented")
 }
 func (UnimplementedComicManagementServiceServer) mustEmbedUnimplementedComicManagementServiceServer() {
 }
@@ -225,6 +337,24 @@ func _ComicManagementService_ListSeries_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ComicManagementService_UpdateSeries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSeriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComicManagementServiceServer).UpdateSeries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComicManagementService_UpdateSeries_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComicManagementServiceServer).UpdateSeries(ctx, req.(*UpdateSeriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ComicManagementService_RemoveSeries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemoveSeriesRequest)
 	if err := dec(in); err != nil {
@@ -261,6 +391,24 @@ func _ComicManagementService_AddIssue_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ComicManagementService_GetIssue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIssueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComicManagementServiceServer).GetIssue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComicManagementService_GetIssue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComicManagementServiceServer).GetIssue(ctx, req.(*GetIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ComicManagementService_ListIssues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListIssuesRequest)
 	if err := dec(in); err != nil {
@@ -275,6 +423,96 @@ func _ComicManagementService_ListIssues_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ComicManagementServiceServer).ListIssues(ctx, req.(*ListIssuesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ComicManagementService_UpdateIssue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateIssueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComicManagementServiceServer).UpdateIssue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComicManagementService_UpdateIssue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComicManagementServiceServer).UpdateIssue(ctx, req.(*UpdateIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ComicManagementService_RemoveIssue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveIssueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComicManagementServiceServer).RemoveIssue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComicManagementService_RemoveIssue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComicManagementServiceServer).RemoveIssue(ctx, req.(*RemoveIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ComicManagementService_ScanLibrary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ScanLibraryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComicManagementServiceServer).ScanLibrary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComicManagementService_ScanLibrary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComicManagementServiceServer).ScanLibrary(ctx, req.(*ScanLibraryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ComicManagementService_ListMissing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMissingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComicManagementServiceServer).ListMissing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComicManagementService_ListMissing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComicManagementServiceServer).ListMissing(ctx, req.(*ListMissingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ComicManagementService_ImportIssue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportIssueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComicManagementServiceServer).ImportIssue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComicManagementService_ImportIssue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComicManagementServiceServer).ImportIssue(ctx, req.(*ImportIssueRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -299,6 +537,10 @@ var ComicManagementService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ComicManagementService_ListSeries_Handler,
 		},
 		{
+			MethodName: "UpdateSeries",
+			Handler:    _ComicManagementService_UpdateSeries_Handler,
+		},
+		{
 			MethodName: "RemoveSeries",
 			Handler:    _ComicManagementService_RemoveSeries_Handler,
 		},
@@ -307,8 +549,32 @@ var ComicManagementService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ComicManagementService_AddIssue_Handler,
 		},
 		{
+			MethodName: "GetIssue",
+			Handler:    _ComicManagementService_GetIssue_Handler,
+		},
+		{
 			MethodName: "ListIssues",
 			Handler:    _ComicManagementService_ListIssues_Handler,
+		},
+		{
+			MethodName: "UpdateIssue",
+			Handler:    _ComicManagementService_UpdateIssue_Handler,
+		},
+		{
+			MethodName: "RemoveIssue",
+			Handler:    _ComicManagementService_RemoveIssue_Handler,
+		},
+		{
+			MethodName: "ScanLibrary",
+			Handler:    _ComicManagementService_ScanLibrary_Handler,
+		},
+		{
+			MethodName: "ListMissing",
+			Handler:    _ComicManagementService_ListMissing_Handler,
+		},
+		{
+			MethodName: "ImportIssue",
+			Handler:    _ComicManagementService_ImportIssue_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

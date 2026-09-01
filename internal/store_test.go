@@ -1,6 +1,7 @@
 package internal_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -70,11 +71,97 @@ func TestStoreListMissingIssues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if total != 1 || len(items) != 1 {
+	if total != 2 || len(items) != 2 {
 		t.Fatalf("total=%d items=%d", total, len(items))
 	}
-	if items[0].IssueID != missing.ID || items[0].SeriesName != "Berserk" {
-		t.Fatalf("%+v", items[0])
+	found := false
+	for _, item := range items {
+		if item.IssueID == missing.ID {
+			found = true
+		}
+	}
+	if !found || items[0].SeriesName != "Berserk" {
+		t.Fatalf("%+v", items)
+	}
+}
+
+func TestStoreUpdateSeriesIssue(t *testing.T) {
+	s, _ := openTempStore(t)
+	ctx := t.Context()
+	ser, err := s.AddSeries(ctx, internal.Series{Title: "One Piece", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := s.AddIssue(ctx, internal.Issue{SeriesID: ser.ID, Number: "1", Title: "Romance Dawn", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	title := "One Piece Updated"
+	pub := "Shueisha"
+	mon := false
+	year := int32(1998)
+	path := "/data/one-piece/001.cbz"
+	updSer, err := s.UpdateSeries(ctx, ser.ID, internal.SeriesUpdate{
+		Title: &title, Publisher: &pub, Monitored: &mon,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updSer.Title != title || updSer.Publisher != pub || updSer.Monitored {
+		t.Fatalf("%+v", updSer)
+	}
+	updIss, err := s.UpdateIssue(ctx, iss.ID, internal.IssueUpdate{
+		Title: &title, Number: &iss.Number, Year: &year, Monitored: &mon, Path: &path,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updIss.Year != year || updIss.Path != path || updIss.Monitored {
+		t.Fatalf("%+v", updIss)
+	}
+}
+
+func TestStoreRemoveIssue(t *testing.T) {
+	s, _ := openTempStore(t)
+	ctx := t.Context()
+	ser, err := s.AddSeries(ctx, internal.Series{Title: "Delete Me", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := s.AddIssue(ctx, internal.Issue{SeriesID: ser.ID, Number: "1", Title: "Gone", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RemoveIssue(ctx, iss.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.GetIssue(ctx, iss.ID); err == nil {
+		t.Fatal("expected issue removed")
+	}
+}
+
+func TestStoreImportIssuePath(t *testing.T) {
+	s, _ := openTempStore(t)
+	ctx := t.Context()
+	dir := t.TempDir()
+	file := filepath.Join(dir, "001.cbz")
+	if err := os.WriteFile(file, []byte("stub"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ser, err := s.AddSeries(ctx, internal.Series{Title: "Import", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	iss, err := s.AddIssue(ctx, internal.Issue{SeriesID: ser.ID, Number: "1", Title: "Wanted", Monitored: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.ImportIssuePath(ctx, iss.ID, file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Path != file {
+		t.Fatalf("%+v", got)
 	}
 }
 

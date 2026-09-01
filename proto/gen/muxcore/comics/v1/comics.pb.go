@@ -113,6 +113,8 @@ type Issue struct {
 	Number        string                 `protobuf:"bytes,4,opt,name=number,proto3" json:"number,omitempty"`
 	Year          int32                  `protobuf:"varint,5,opt,name=year,proto3" json:"year,omitempty"`
 	Monitored     bool                   `protobuf:"varint,6,opt,name=monitored,proto3" json:"monitored,omitempty"`
+	Path          string                 `protobuf:"bytes,7,opt,name=path,proto3" json:"path,omitempty"`
+	HasFile       bool                   `protobuf:"varint,8,opt,name=has_file,json=hasFile,proto3" json:"has_file,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -189,6 +191,104 @@ func (x *Issue) GetMonitored() bool {
 	return false
 }
 
+func (x *Issue) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *Issue) GetHasFile() bool {
+	if x != nil {
+		return x.HasFile
+	}
+	return false
+}
+
+type MissingIssue struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IssueId       string                 `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	SeriesId      string                 `protobuf:"bytes,2,opt,name=series_id,json=seriesId,proto3" json:"series_id,omitempty"`
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Number        string                 `protobuf:"bytes,4,opt,name=number,proto3" json:"number,omitempty"`
+	SeriesName    string                 `protobuf:"bytes,5,opt,name=series_name,json=seriesName,proto3" json:"series_name,omitempty"`
+	Year          int32                  `protobuf:"varint,6,opt,name=year,proto3" json:"year,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MissingIssue) Reset() {
+	*x = MissingIssue{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MissingIssue) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MissingIssue) ProtoMessage() {}
+
+func (x *MissingIssue) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MissingIssue.ProtoReflect.Descriptor instead.
+func (*MissingIssue) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MissingIssue) GetIssueId() string {
+	if x != nil {
+		return x.IssueId
+	}
+	return ""
+}
+
+func (x *MissingIssue) GetSeriesId() string {
+	if x != nil {
+		return x.SeriesId
+	}
+	return ""
+}
+
+func (x *MissingIssue) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *MissingIssue) GetNumber() string {
+	if x != nil {
+		return x.Number
+	}
+	return ""
+}
+
+func (x *MissingIssue) GetSeriesName() string {
+	if x != nil {
+		return x.SeriesName
+	}
+	return ""
+}
+
+func (x *MissingIssue) GetYear() int32 {
+	if x != nil {
+		return x.Year
+	}
+	return 0
+}
+
 type AddSeriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -202,7 +302,7 @@ type AddSeriesRequest struct {
 
 func (x *AddSeriesRequest) Reset() {
 	*x = AddSeriesRequest{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[2]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -214,7 +314,7 @@ func (x *AddSeriesRequest) String() string {
 func (*AddSeriesRequest) ProtoMessage() {}
 
 func (x *AddSeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[2]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,7 +327,7 @@ func (x *AddSeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddSeriesRequest.ProtoReflect.Descriptor instead.
 func (*AddSeriesRequest) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{2}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AddSeriesRequest) GetTitle() string {
@@ -274,7 +374,7 @@ type AddSeriesResponse struct {
 
 func (x *AddSeriesResponse) Reset() {
 	*x = AddSeriesResponse{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[3]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -286,7 +386,7 @@ func (x *AddSeriesResponse) String() string {
 func (*AddSeriesResponse) ProtoMessage() {}
 
 func (x *AddSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[3]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -299,7 +399,7 @@ func (x *AddSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddSeriesResponse.ProtoReflect.Descriptor instead.
 func (*AddSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{3}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AddSeriesResponse) GetSeries() *Series {
@@ -318,7 +418,7 @@ type GetSeriesRequest struct {
 
 func (x *GetSeriesRequest) Reset() {
 	*x = GetSeriesRequest{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[4]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -330,7 +430,7 @@ func (x *GetSeriesRequest) String() string {
 func (*GetSeriesRequest) ProtoMessage() {}
 
 func (x *GetSeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[4]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,7 +443,7 @@ func (x *GetSeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSeriesRequest.ProtoReflect.Descriptor instead.
 func (*GetSeriesRequest) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{4}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetSeriesRequest) GetId() string {
@@ -362,7 +462,7 @@ type GetSeriesResponse struct {
 
 func (x *GetSeriesResponse) Reset() {
 	*x = GetSeriesResponse{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[5]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -374,7 +474,7 @@ func (x *GetSeriesResponse) String() string {
 func (*GetSeriesResponse) ProtoMessage() {}
 
 func (x *GetSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[5]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -387,7 +487,7 @@ func (x *GetSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSeriesResponse.ProtoReflect.Descriptor instead.
 func (*GetSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{5}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetSeriesResponse) GetSeries() *Series {
@@ -406,7 +506,7 @@ type ListSeriesRequest struct {
 
 func (x *ListSeriesRequest) Reset() {
 	*x = ListSeriesRequest{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[6]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -418,7 +518,7 @@ func (x *ListSeriesRequest) String() string {
 func (*ListSeriesRequest) ProtoMessage() {}
 
 func (x *ListSeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[6]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -431,7 +531,7 @@ func (x *ListSeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSeriesRequest.ProtoReflect.Descriptor instead.
 func (*ListSeriesRequest) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{6}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListSeriesRequest) GetQuery() string {
@@ -450,7 +550,7 @@ type ListSeriesResponse struct {
 
 func (x *ListSeriesResponse) Reset() {
 	*x = ListSeriesResponse{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[7]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +562,7 @@ func (x *ListSeriesResponse) String() string {
 func (*ListSeriesResponse) ProtoMessage() {}
 
 func (x *ListSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[7]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -475,10 +575,130 @@ func (x *ListSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSeriesResponse.ProtoReflect.Descriptor instead.
 func (*ListSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{7}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListSeriesResponse) GetSeries() []*Series {
+	if x != nil {
+		return x.Series
+	}
+	return nil
+}
+
+type UpdateSeriesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title         *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Publisher     *string                `protobuf:"bytes,3,opt,name=publisher,proto3,oneof" json:"publisher,omitempty"`
+	Monitored     *bool                  `protobuf:"varint,4,opt,name=monitored,proto3,oneof" json:"monitored,omitempty"`
+	Path          *string                `protobuf:"bytes,5,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSeriesRequest) Reset() {
+	*x = UpdateSeriesRequest{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSeriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSeriesRequest) ProtoMessage() {}
+
+func (x *UpdateSeriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSeriesRequest.ProtoReflect.Descriptor instead.
+func (*UpdateSeriesRequest) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdateSeriesRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateSeriesRequest) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *UpdateSeriesRequest) GetPublisher() string {
+	if x != nil && x.Publisher != nil {
+		return *x.Publisher
+	}
+	return ""
+}
+
+func (x *UpdateSeriesRequest) GetMonitored() bool {
+	if x != nil && x.Monitored != nil {
+		return *x.Monitored
+	}
+	return false
+}
+
+func (x *UpdateSeriesRequest) GetPath() string {
+	if x != nil && x.Path != nil {
+		return *x.Path
+	}
+	return ""
+}
+
+type UpdateSeriesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Series        *Series                `protobuf:"bytes,1,opt,name=series,proto3" json:"series,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateSeriesResponse) Reset() {
+	*x = UpdateSeriesResponse{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSeriesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSeriesResponse) ProtoMessage() {}
+
+func (x *UpdateSeriesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSeriesResponse.ProtoReflect.Descriptor instead.
+func (*UpdateSeriesResponse) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *UpdateSeriesResponse) GetSeries() *Series {
 	if x != nil {
 		return x.Series
 	}
@@ -495,7 +715,7 @@ type RemoveSeriesRequest struct {
 
 func (x *RemoveSeriesRequest) Reset() {
 	*x = RemoveSeriesRequest{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[8]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -507,7 +727,7 @@ func (x *RemoveSeriesRequest) String() string {
 func (*RemoveSeriesRequest) ProtoMessage() {}
 
 func (x *RemoveSeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[8]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -520,7 +740,7 @@ func (x *RemoveSeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveSeriesRequest.ProtoReflect.Descriptor instead.
 func (*RemoveSeriesRequest) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{8}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *RemoveSeriesRequest) GetId() string {
@@ -546,7 +766,7 @@ type RemoveSeriesResponse struct {
 
 func (x *RemoveSeriesResponse) Reset() {
 	*x = RemoveSeriesResponse{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[9]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -558,7 +778,7 @@ func (x *RemoveSeriesResponse) String() string {
 func (*RemoveSeriesResponse) ProtoMessage() {}
 
 func (x *RemoveSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[9]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -571,7 +791,7 @@ func (x *RemoveSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveSeriesResponse.ProtoReflect.Descriptor instead.
 func (*RemoveSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{9}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *RemoveSeriesResponse) GetSuccess() bool {
@@ -594,7 +814,7 @@ type AddIssueRequest struct {
 
 func (x *AddIssueRequest) Reset() {
 	*x = AddIssueRequest{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[10]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -606,7 +826,7 @@ func (x *AddIssueRequest) String() string {
 func (*AddIssueRequest) ProtoMessage() {}
 
 func (x *AddIssueRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[10]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -619,7 +839,7 @@ func (x *AddIssueRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddIssueRequest.ProtoReflect.Descriptor instead.
 func (*AddIssueRequest) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{10}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *AddIssueRequest) GetSeriesId() string {
@@ -666,7 +886,7 @@ type AddIssueResponse struct {
 
 func (x *AddIssueResponse) Reset() {
 	*x = AddIssueResponse{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[11]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -678,7 +898,7 @@ func (x *AddIssueResponse) String() string {
 func (*AddIssueResponse) ProtoMessage() {}
 
 func (x *AddIssueResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[11]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -691,10 +911,98 @@ func (x *AddIssueResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddIssueResponse.ProtoReflect.Descriptor instead.
 func (*AddIssueResponse) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{11}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AddIssueResponse) GetIssue() *Issue {
+	if x != nil {
+		return x.Issue
+	}
+	return nil
+}
+
+type GetIssueRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetIssueRequest) Reset() {
+	*x = GetIssueRequest{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetIssueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetIssueRequest) ProtoMessage() {}
+
+func (x *GetIssueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetIssueRequest.ProtoReflect.Descriptor instead.
+func (*GetIssueRequest) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetIssueRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetIssueResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Issue         *Issue                 `protobuf:"bytes,1,opt,name=issue,proto3" json:"issue,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetIssueResponse) Reset() {
+	*x = GetIssueResponse{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetIssueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetIssueResponse) ProtoMessage() {}
+
+func (x *GetIssueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetIssueResponse.ProtoReflect.Descriptor instead.
+func (*GetIssueResponse) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetIssueResponse) GetIssue() *Issue {
 	if x != nil {
 		return x.Issue
 	}
@@ -710,7 +1018,7 @@ type ListIssuesRequest struct {
 
 func (x *ListIssuesRequest) Reset() {
 	*x = ListIssuesRequest{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[12]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -722,7 +1030,7 @@ func (x *ListIssuesRequest) String() string {
 func (*ListIssuesRequest) ProtoMessage() {}
 
 func (x *ListIssuesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[12]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -735,7 +1043,7 @@ func (x *ListIssuesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIssuesRequest.ProtoReflect.Descriptor instead.
 func (*ListIssuesRequest) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{12}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListIssuesRequest) GetSeriesId() string {
@@ -754,7 +1062,7 @@ type ListIssuesResponse struct {
 
 func (x *ListIssuesResponse) Reset() {
 	*x = ListIssuesResponse{}
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[13]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -766,7 +1074,7 @@ func (x *ListIssuesResponse) String() string {
 func (*ListIssuesResponse) ProtoMessage() {}
 
 func (x *ListIssuesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[13]
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -779,12 +1087,556 @@ func (x *ListIssuesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListIssuesResponse.ProtoReflect.Descriptor instead.
 func (*ListIssuesResponse) Descriptor() ([]byte, []int) {
-	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{13}
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListIssuesResponse) GetIssues() []*Issue {
 	if x != nil {
 		return x.Issues
+	}
+	return nil
+}
+
+type UpdateIssueRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title         *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Number        *string                `protobuf:"bytes,3,opt,name=number,proto3,oneof" json:"number,omitempty"`
+	Year          *int32                 `protobuf:"varint,4,opt,name=year,proto3,oneof" json:"year,omitempty"`
+	Monitored     *bool                  `protobuf:"varint,5,opt,name=monitored,proto3,oneof" json:"monitored,omitempty"`
+	Path          *string                `protobuf:"bytes,6,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateIssueRequest) Reset() {
+	*x = UpdateIssueRequest{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateIssueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateIssueRequest) ProtoMessage() {}
+
+func (x *UpdateIssueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateIssueRequest.ProtoReflect.Descriptor instead.
+func (*UpdateIssueRequest) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *UpdateIssueRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateIssueRequest) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *UpdateIssueRequest) GetNumber() string {
+	if x != nil && x.Number != nil {
+		return *x.Number
+	}
+	return ""
+}
+
+func (x *UpdateIssueRequest) GetYear() int32 {
+	if x != nil && x.Year != nil {
+		return *x.Year
+	}
+	return 0
+}
+
+func (x *UpdateIssueRequest) GetMonitored() bool {
+	if x != nil && x.Monitored != nil {
+		return *x.Monitored
+	}
+	return false
+}
+
+func (x *UpdateIssueRequest) GetPath() string {
+	if x != nil && x.Path != nil {
+		return *x.Path
+	}
+	return ""
+}
+
+type UpdateIssueResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Issue         *Issue                 `protobuf:"bytes,1,opt,name=issue,proto3" json:"issue,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateIssueResponse) Reset() {
+	*x = UpdateIssueResponse{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateIssueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateIssueResponse) ProtoMessage() {}
+
+func (x *UpdateIssueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateIssueResponse.ProtoReflect.Descriptor instead.
+func (*UpdateIssueResponse) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *UpdateIssueResponse) GetIssue() *Issue {
+	if x != nil {
+		return x.Issue
+	}
+	return nil
+}
+
+type RemoveIssueRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	DeleteFiles   bool                   `protobuf:"varint,2,opt,name=delete_files,json=deleteFiles,proto3" json:"delete_files,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveIssueRequest) Reset() {
+	*x = RemoveIssueRequest{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveIssueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveIssueRequest) ProtoMessage() {}
+
+func (x *RemoveIssueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveIssueRequest.ProtoReflect.Descriptor instead.
+func (*RemoveIssueRequest) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *RemoveIssueRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RemoveIssueRequest) GetDeleteFiles() bool {
+	if x != nil {
+		return x.DeleteFiles
+	}
+	return false
+}
+
+type RemoveIssueResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveIssueResponse) Reset() {
+	*x = RemoveIssueResponse{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveIssueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveIssueResponse) ProtoMessage() {}
+
+func (x *RemoveIssueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveIssueResponse.ProtoReflect.Descriptor instead.
+func (*RemoveIssueResponse) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *RemoveIssueResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type ScanLibraryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScanLibraryRequest) Reset() {
+	*x = ScanLibraryRequest{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScanLibraryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanLibraryRequest) ProtoMessage() {}
+
+func (x *ScanLibraryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanLibraryRequest.ProtoReflect.Descriptor instead.
+func (*ScanLibraryRequest) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{23}
+}
+
+type ScanLibraryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FilesFound    int32                  `protobuf:"varint,1,opt,name=files_found,json=filesFound,proto3" json:"files_found,omitempty"`
+	FilesImported int32                  `protobuf:"varint,2,opt,name=files_imported,json=filesImported,proto3" json:"files_imported,omitempty"`
+	FilesSkipped  int32                  `protobuf:"varint,3,opt,name=files_skipped,json=filesSkipped,proto3" json:"files_skipped,omitempty"`
+	PathsCleared  int32                  `protobuf:"varint,4,opt,name=paths_cleared,json=pathsCleared,proto3" json:"paths_cleared,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ScanLibraryResponse) Reset() {
+	*x = ScanLibraryResponse{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScanLibraryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScanLibraryResponse) ProtoMessage() {}
+
+func (x *ScanLibraryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScanLibraryResponse.ProtoReflect.Descriptor instead.
+func (*ScanLibraryResponse) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ScanLibraryResponse) GetFilesFound() int32 {
+	if x != nil {
+		return x.FilesFound
+	}
+	return 0
+}
+
+func (x *ScanLibraryResponse) GetFilesImported() int32 {
+	if x != nil {
+		return x.FilesImported
+	}
+	return 0
+}
+
+func (x *ScanLibraryResponse) GetFilesSkipped() int32 {
+	if x != nil {
+		return x.FilesSkipped
+	}
+	return 0
+}
+
+func (x *ScanLibraryResponse) GetPathsCleared() int32 {
+	if x != nil {
+		return x.PathsCleared
+	}
+	return 0
+}
+
+type ListMissingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMissingRequest) Reset() {
+	*x = ListMissingRequest{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMissingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMissingRequest) ProtoMessage() {}
+
+func (x *ListMissingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMissingRequest.ProtoReflect.Descriptor instead.
+func (*ListMissingRequest) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *ListMissingRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListMissingRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListMissingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*MissingIssue        `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	Page          int32                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMissingResponse) Reset() {
+	*x = ListMissingResponse{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMissingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMissingResponse) ProtoMessage() {}
+
+func (x *ListMissingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMissingResponse.ProtoReflect.Descriptor instead.
+func (*ListMissingResponse) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ListMissingResponse) GetItems() []*MissingIssue {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListMissingResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *ListMissingResponse) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListMissingResponse) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ImportIssueRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IssueId       string                 `protobuf:"bytes,1,opt,name=issue_id,json=issueId,proto3" json:"issue_id,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ImportIssueRequest) Reset() {
+	*x = ImportIssueRequest{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportIssueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportIssueRequest) ProtoMessage() {}
+
+func (x *ImportIssueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportIssueRequest.ProtoReflect.Descriptor instead.
+func (*ImportIssueRequest) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ImportIssueRequest) GetIssueId() string {
+	if x != nil {
+		return x.IssueId
+	}
+	return ""
+}
+
+func (x *ImportIssueRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type ImportIssueResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Issue         *Issue                 `protobuf:"bytes,1,opt,name=issue,proto3" json:"issue,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ImportIssueResponse) Reset() {
+	*x = ImportIssueResponse{}
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportIssueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportIssueResponse) ProtoMessage() {}
+
+func (x *ImportIssueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_muxcore_comics_v1_comics_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportIssueResponse.ProtoReflect.Descriptor instead.
+func (*ImportIssueResponse) Descriptor() ([]byte, []int) {
+	return file_muxcore_comics_v1_comics_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ImportIssueResponse) GetIssue() *Issue {
+	if x != nil {
+		return x.Issue
 	}
 	return nil
 }
@@ -800,14 +1652,24 @@ const file_muxcore_comics_v1_comics_proto_rawDesc = "" +
 	"\tpublisher\x18\x03 \x01(\tR\tpublisher\x12!\n" +
 	"\fcomicvine_id\x18\x04 \x01(\tR\vcomicvineId\x12\x1c\n" +
 	"\tmonitored\x18\x05 \x01(\bR\tmonitored\x12\x12\n" +
-	"\x04path\x18\x06 \x01(\tR\x04path\"\x94\x01\n" +
+	"\x04path\x18\x06 \x01(\tR\x04path\"\xc3\x01\n" +
 	"\x05Issue\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tseries_id\x18\x02 \x01(\tR\bseriesId\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x16\n" +
 	"\x06number\x18\x04 \x01(\tR\x06number\x12\x12\n" +
 	"\x04year\x18\x05 \x01(\x05R\x04year\x12\x1c\n" +
-	"\tmonitored\x18\x06 \x01(\bR\tmonitored\"\x9b\x01\n" +
+	"\tmonitored\x18\x06 \x01(\bR\tmonitored\x12\x12\n" +
+	"\x04path\x18\a \x01(\tR\x04path\x12\x19\n" +
+	"\bhas_file\x18\b \x01(\bR\ahasFile\"\xa9\x01\n" +
+	"\fMissingIssue\x12\x19\n" +
+	"\bissue_id\x18\x01 \x01(\tR\aissueId\x12\x1b\n" +
+	"\tseries_id\x18\x02 \x01(\tR\bseriesId\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x16\n" +
+	"\x06number\x18\x04 \x01(\tR\x06number\x12\x1f\n" +
+	"\vseries_name\x18\x05 \x01(\tR\n" +
+	"seriesName\x12\x12\n" +
+	"\x04year\x18\x06 \x01(\x05R\x04year\"\x9b\x01\n" +
 	"\x10AddSeriesRequest\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x1c\n" +
 	"\tpublisher\x18\x02 \x01(\tR\tpublisher\x12!\n" +
@@ -823,7 +1685,21 @@ const file_muxcore_comics_v1_comics_proto_rawDesc = "" +
 	"\x11ListSeriesRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\"G\n" +
 	"\x12ListSeriesResponse\x121\n" +
-	"\x06series\x18\x01 \x03(\v2\x19.muxcore.comics.v1.SeriesR\x06series\"H\n" +
+	"\x06series\x18\x01 \x03(\v2\x19.muxcore.comics.v1.SeriesR\x06series\"\xce\x01\n" +
+	"\x13UpdateSeriesRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\x05title\x18\x02 \x01(\tH\x00R\x05title\x88\x01\x01\x12!\n" +
+	"\tpublisher\x18\x03 \x01(\tH\x01R\tpublisher\x88\x01\x01\x12!\n" +
+	"\tmonitored\x18\x04 \x01(\bH\x02R\tmonitored\x88\x01\x01\x12\x17\n" +
+	"\x04path\x18\x05 \x01(\tH\x03R\x04path\x88\x01\x01B\b\n" +
+	"\x06_titleB\f\n" +
+	"\n" +
+	"_publisherB\f\n" +
+	"\n" +
+	"_monitoredB\a\n" +
+	"\x05_path\"I\n" +
+	"\x14UpdateSeriesResponse\x121\n" +
+	"\x06series\x18\x01 \x01(\v2\x19.muxcore.comics.v1.SeriesR\x06series\"H\n" +
 	"\x13RemoveSeriesRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fdelete_files\x18\x02 \x01(\bR\vdeleteFiles\"0\n" +
@@ -836,20 +1712,71 @@ const file_muxcore_comics_v1_comics_proto_rawDesc = "" +
 	"\x04year\x18\x04 \x01(\x05R\x04year\x12\x1c\n" +
 	"\tmonitored\x18\x05 \x01(\bR\tmonitored\"B\n" +
 	"\x10AddIssueResponse\x12.\n" +
+	"\x05issue\x18\x01 \x01(\v2\x18.muxcore.comics.v1.IssueR\x05issue\"!\n" +
+	"\x0fGetIssueRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"B\n" +
+	"\x10GetIssueResponse\x12.\n" +
 	"\x05issue\x18\x01 \x01(\v2\x18.muxcore.comics.v1.IssueR\x05issue\"0\n" +
 	"\x11ListIssuesRequest\x12\x1b\n" +
 	"\tseries_id\x18\x01 \x01(\tR\bseriesId\"F\n" +
 	"\x12ListIssuesResponse\x120\n" +
-	"\x06issues\x18\x01 \x03(\v2\x18.muxcore.comics.v1.IssueR\x06issues2\xb4\x04\n" +
+	"\x06issues\x18\x01 \x03(\v2\x18.muxcore.comics.v1.IssueR\x06issues\"\xe6\x01\n" +
+	"\x12UpdateIssueRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\x05title\x18\x02 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x1b\n" +
+	"\x06number\x18\x03 \x01(\tH\x01R\x06number\x88\x01\x01\x12\x17\n" +
+	"\x04year\x18\x04 \x01(\x05H\x02R\x04year\x88\x01\x01\x12!\n" +
+	"\tmonitored\x18\x05 \x01(\bH\x03R\tmonitored\x88\x01\x01\x12\x17\n" +
+	"\x04path\x18\x06 \x01(\tH\x04R\x04path\x88\x01\x01B\b\n" +
+	"\x06_titleB\t\n" +
+	"\a_numberB\a\n" +
+	"\x05_yearB\f\n" +
+	"\n" +
+	"_monitoredB\a\n" +
+	"\x05_path\"E\n" +
+	"\x13UpdateIssueResponse\x12.\n" +
+	"\x05issue\x18\x01 \x01(\v2\x18.muxcore.comics.v1.IssueR\x05issue\"G\n" +
+	"\x12RemoveIssueRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
+	"\fdelete_files\x18\x02 \x01(\bR\vdeleteFiles\"/\n" +
+	"\x13RemoveIssueResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x14\n" +
+	"\x12ScanLibraryRequest\"\xa7\x01\n" +
+	"\x13ScanLibraryResponse\x12\x1f\n" +
+	"\vfiles_found\x18\x01 \x01(\x05R\n" +
+	"filesFound\x12%\n" +
+	"\x0efiles_imported\x18\x02 \x01(\x05R\rfilesImported\x12#\n" +
+	"\rfiles_skipped\x18\x03 \x01(\x05R\ffilesSkipped\x12#\n" +
+	"\rpaths_cleared\x18\x04 \x01(\x05R\fpathsCleared\"E\n" +
+	"\x12ListMissingRequest\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"\x93\x01\n" +
+	"\x13ListMissingResponse\x125\n" +
+	"\x05items\x18\x01 \x03(\v2\x1f.muxcore.comics.v1.MissingIssueR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"C\n" +
+	"\x12ImportIssueRequest\x12\x19\n" +
+	"\bissue_id\x18\x01 \x01(\tR\aissueId\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\"E\n" +
+	"\x13ImportIssueResponse\x12.\n" +
+	"\x05issue\x18\x01 \x01(\v2\x18.muxcore.comics.v1.IssueR\x05issue2\xc0\t\n" +
 	"\x16ComicManagementService\x12V\n" +
 	"\tAddSeries\x12#.muxcore.comics.v1.AddSeriesRequest\x1a$.muxcore.comics.v1.AddSeriesResponse\x12V\n" +
 	"\tGetSeries\x12#.muxcore.comics.v1.GetSeriesRequest\x1a$.muxcore.comics.v1.GetSeriesResponse\x12Y\n" +
 	"\n" +
 	"ListSeries\x12$.muxcore.comics.v1.ListSeriesRequest\x1a%.muxcore.comics.v1.ListSeriesResponse\x12_\n" +
+	"\fUpdateSeries\x12&.muxcore.comics.v1.UpdateSeriesRequest\x1a'.muxcore.comics.v1.UpdateSeriesResponse\x12_\n" +
 	"\fRemoveSeries\x12&.muxcore.comics.v1.RemoveSeriesRequest\x1a'.muxcore.comics.v1.RemoveSeriesResponse\x12S\n" +
-	"\bAddIssue\x12\".muxcore.comics.v1.AddIssueRequest\x1a#.muxcore.comics.v1.AddIssueResponse\x12Y\n" +
+	"\bAddIssue\x12\".muxcore.comics.v1.AddIssueRequest\x1a#.muxcore.comics.v1.AddIssueResponse\x12S\n" +
+	"\bGetIssue\x12\".muxcore.comics.v1.GetIssueRequest\x1a#.muxcore.comics.v1.GetIssueResponse\x12Y\n" +
 	"\n" +
-	"ListIssues\x12$.muxcore.comics.v1.ListIssuesRequest\x1a%.muxcore.comics.v1.ListIssuesResponseBLZJgithub.com/Muxcore-Media/media-comics/proto/gen/muxcore/comics/v1;comicsv1b\x06proto3"
+	"ListIssues\x12$.muxcore.comics.v1.ListIssuesRequest\x1a%.muxcore.comics.v1.ListIssuesResponse\x12\\\n" +
+	"\vUpdateIssue\x12%.muxcore.comics.v1.UpdateIssueRequest\x1a&.muxcore.comics.v1.UpdateIssueResponse\x12\\\n" +
+	"\vRemoveIssue\x12%.muxcore.comics.v1.RemoveIssueRequest\x1a&.muxcore.comics.v1.RemoveIssueResponse\x12\\\n" +
+	"\vScanLibrary\x12%.muxcore.comics.v1.ScanLibraryRequest\x1a&.muxcore.comics.v1.ScanLibraryResponse\x12\\\n" +
+	"\vListMissing\x12%.muxcore.comics.v1.ListMissingRequest\x1a&.muxcore.comics.v1.ListMissingResponse\x12\\\n" +
+	"\vImportIssue\x12%.muxcore.comics.v1.ImportIssueRequest\x1a&.muxcore.comics.v1.ImportIssueResponseBLZJgithub.com/Muxcore-Media/media-comics/proto/gen/muxcore/comics/v1;comicsv1b\x06proto3"
 
 var (
 	file_muxcore_comics_v1_comics_proto_rawDescOnce sync.Once
@@ -863,46 +1790,80 @@ func file_muxcore_comics_v1_comics_proto_rawDescGZIP() []byte {
 	return file_muxcore_comics_v1_comics_proto_rawDescData
 }
 
-var file_muxcore_comics_v1_comics_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_muxcore_comics_v1_comics_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_muxcore_comics_v1_comics_proto_goTypes = []any{
 	(*Series)(nil),               // 0: muxcore.comics.v1.Series
 	(*Issue)(nil),                // 1: muxcore.comics.v1.Issue
-	(*AddSeriesRequest)(nil),     // 2: muxcore.comics.v1.AddSeriesRequest
-	(*AddSeriesResponse)(nil),    // 3: muxcore.comics.v1.AddSeriesResponse
-	(*GetSeriesRequest)(nil),     // 4: muxcore.comics.v1.GetSeriesRequest
-	(*GetSeriesResponse)(nil),    // 5: muxcore.comics.v1.GetSeriesResponse
-	(*ListSeriesRequest)(nil),    // 6: muxcore.comics.v1.ListSeriesRequest
-	(*ListSeriesResponse)(nil),   // 7: muxcore.comics.v1.ListSeriesResponse
-	(*RemoveSeriesRequest)(nil),  // 8: muxcore.comics.v1.RemoveSeriesRequest
-	(*RemoveSeriesResponse)(nil), // 9: muxcore.comics.v1.RemoveSeriesResponse
-	(*AddIssueRequest)(nil),      // 10: muxcore.comics.v1.AddIssueRequest
-	(*AddIssueResponse)(nil),     // 11: muxcore.comics.v1.AddIssueResponse
-	(*ListIssuesRequest)(nil),    // 12: muxcore.comics.v1.ListIssuesRequest
-	(*ListIssuesResponse)(nil),   // 13: muxcore.comics.v1.ListIssuesResponse
+	(*MissingIssue)(nil),         // 2: muxcore.comics.v1.MissingIssue
+	(*AddSeriesRequest)(nil),     // 3: muxcore.comics.v1.AddSeriesRequest
+	(*AddSeriesResponse)(nil),    // 4: muxcore.comics.v1.AddSeriesResponse
+	(*GetSeriesRequest)(nil),     // 5: muxcore.comics.v1.GetSeriesRequest
+	(*GetSeriesResponse)(nil),    // 6: muxcore.comics.v1.GetSeriesResponse
+	(*ListSeriesRequest)(nil),    // 7: muxcore.comics.v1.ListSeriesRequest
+	(*ListSeriesResponse)(nil),   // 8: muxcore.comics.v1.ListSeriesResponse
+	(*UpdateSeriesRequest)(nil),  // 9: muxcore.comics.v1.UpdateSeriesRequest
+	(*UpdateSeriesResponse)(nil), // 10: muxcore.comics.v1.UpdateSeriesResponse
+	(*RemoveSeriesRequest)(nil),  // 11: muxcore.comics.v1.RemoveSeriesRequest
+	(*RemoveSeriesResponse)(nil), // 12: muxcore.comics.v1.RemoveSeriesResponse
+	(*AddIssueRequest)(nil),      // 13: muxcore.comics.v1.AddIssueRequest
+	(*AddIssueResponse)(nil),     // 14: muxcore.comics.v1.AddIssueResponse
+	(*GetIssueRequest)(nil),      // 15: muxcore.comics.v1.GetIssueRequest
+	(*GetIssueResponse)(nil),     // 16: muxcore.comics.v1.GetIssueResponse
+	(*ListIssuesRequest)(nil),    // 17: muxcore.comics.v1.ListIssuesRequest
+	(*ListIssuesResponse)(nil),   // 18: muxcore.comics.v1.ListIssuesResponse
+	(*UpdateIssueRequest)(nil),   // 19: muxcore.comics.v1.UpdateIssueRequest
+	(*UpdateIssueResponse)(nil),  // 20: muxcore.comics.v1.UpdateIssueResponse
+	(*RemoveIssueRequest)(nil),   // 21: muxcore.comics.v1.RemoveIssueRequest
+	(*RemoveIssueResponse)(nil),  // 22: muxcore.comics.v1.RemoveIssueResponse
+	(*ScanLibraryRequest)(nil),   // 23: muxcore.comics.v1.ScanLibraryRequest
+	(*ScanLibraryResponse)(nil),  // 24: muxcore.comics.v1.ScanLibraryResponse
+	(*ListMissingRequest)(nil),   // 25: muxcore.comics.v1.ListMissingRequest
+	(*ListMissingResponse)(nil),  // 26: muxcore.comics.v1.ListMissingResponse
+	(*ImportIssueRequest)(nil),   // 27: muxcore.comics.v1.ImportIssueRequest
+	(*ImportIssueResponse)(nil),  // 28: muxcore.comics.v1.ImportIssueResponse
 }
 var file_muxcore_comics_v1_comics_proto_depIdxs = []int32{
 	0,  // 0: muxcore.comics.v1.AddSeriesResponse.series:type_name -> muxcore.comics.v1.Series
 	0,  // 1: muxcore.comics.v1.GetSeriesResponse.series:type_name -> muxcore.comics.v1.Series
 	0,  // 2: muxcore.comics.v1.ListSeriesResponse.series:type_name -> muxcore.comics.v1.Series
-	1,  // 3: muxcore.comics.v1.AddIssueResponse.issue:type_name -> muxcore.comics.v1.Issue
-	1,  // 4: muxcore.comics.v1.ListIssuesResponse.issues:type_name -> muxcore.comics.v1.Issue
-	2,  // 5: muxcore.comics.v1.ComicManagementService.AddSeries:input_type -> muxcore.comics.v1.AddSeriesRequest
-	4,  // 6: muxcore.comics.v1.ComicManagementService.GetSeries:input_type -> muxcore.comics.v1.GetSeriesRequest
-	6,  // 7: muxcore.comics.v1.ComicManagementService.ListSeries:input_type -> muxcore.comics.v1.ListSeriesRequest
-	8,  // 8: muxcore.comics.v1.ComicManagementService.RemoveSeries:input_type -> muxcore.comics.v1.RemoveSeriesRequest
-	10, // 9: muxcore.comics.v1.ComicManagementService.AddIssue:input_type -> muxcore.comics.v1.AddIssueRequest
-	12, // 10: muxcore.comics.v1.ComicManagementService.ListIssues:input_type -> muxcore.comics.v1.ListIssuesRequest
-	3,  // 11: muxcore.comics.v1.ComicManagementService.AddSeries:output_type -> muxcore.comics.v1.AddSeriesResponse
-	5,  // 12: muxcore.comics.v1.ComicManagementService.GetSeries:output_type -> muxcore.comics.v1.GetSeriesResponse
-	7,  // 13: muxcore.comics.v1.ComicManagementService.ListSeries:output_type -> muxcore.comics.v1.ListSeriesResponse
-	9,  // 14: muxcore.comics.v1.ComicManagementService.RemoveSeries:output_type -> muxcore.comics.v1.RemoveSeriesResponse
-	11, // 15: muxcore.comics.v1.ComicManagementService.AddIssue:output_type -> muxcore.comics.v1.AddIssueResponse
-	13, // 16: muxcore.comics.v1.ComicManagementService.ListIssues:output_type -> muxcore.comics.v1.ListIssuesResponse
-	11, // [11:17] is the sub-list for method output_type
-	5,  // [5:11] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	0,  // 3: muxcore.comics.v1.UpdateSeriesResponse.series:type_name -> muxcore.comics.v1.Series
+	1,  // 4: muxcore.comics.v1.AddIssueResponse.issue:type_name -> muxcore.comics.v1.Issue
+	1,  // 5: muxcore.comics.v1.GetIssueResponse.issue:type_name -> muxcore.comics.v1.Issue
+	1,  // 6: muxcore.comics.v1.ListIssuesResponse.issues:type_name -> muxcore.comics.v1.Issue
+	1,  // 7: muxcore.comics.v1.UpdateIssueResponse.issue:type_name -> muxcore.comics.v1.Issue
+	2,  // 8: muxcore.comics.v1.ListMissingResponse.items:type_name -> muxcore.comics.v1.MissingIssue
+	1,  // 9: muxcore.comics.v1.ImportIssueResponse.issue:type_name -> muxcore.comics.v1.Issue
+	3,  // 10: muxcore.comics.v1.ComicManagementService.AddSeries:input_type -> muxcore.comics.v1.AddSeriesRequest
+	5,  // 11: muxcore.comics.v1.ComicManagementService.GetSeries:input_type -> muxcore.comics.v1.GetSeriesRequest
+	7,  // 12: muxcore.comics.v1.ComicManagementService.ListSeries:input_type -> muxcore.comics.v1.ListSeriesRequest
+	9,  // 13: muxcore.comics.v1.ComicManagementService.UpdateSeries:input_type -> muxcore.comics.v1.UpdateSeriesRequest
+	11, // 14: muxcore.comics.v1.ComicManagementService.RemoveSeries:input_type -> muxcore.comics.v1.RemoveSeriesRequest
+	13, // 15: muxcore.comics.v1.ComicManagementService.AddIssue:input_type -> muxcore.comics.v1.AddIssueRequest
+	15, // 16: muxcore.comics.v1.ComicManagementService.GetIssue:input_type -> muxcore.comics.v1.GetIssueRequest
+	17, // 17: muxcore.comics.v1.ComicManagementService.ListIssues:input_type -> muxcore.comics.v1.ListIssuesRequest
+	19, // 18: muxcore.comics.v1.ComicManagementService.UpdateIssue:input_type -> muxcore.comics.v1.UpdateIssueRequest
+	21, // 19: muxcore.comics.v1.ComicManagementService.RemoveIssue:input_type -> muxcore.comics.v1.RemoveIssueRequest
+	23, // 20: muxcore.comics.v1.ComicManagementService.ScanLibrary:input_type -> muxcore.comics.v1.ScanLibraryRequest
+	25, // 21: muxcore.comics.v1.ComicManagementService.ListMissing:input_type -> muxcore.comics.v1.ListMissingRequest
+	27, // 22: muxcore.comics.v1.ComicManagementService.ImportIssue:input_type -> muxcore.comics.v1.ImportIssueRequest
+	4,  // 23: muxcore.comics.v1.ComicManagementService.AddSeries:output_type -> muxcore.comics.v1.AddSeriesResponse
+	6,  // 24: muxcore.comics.v1.ComicManagementService.GetSeries:output_type -> muxcore.comics.v1.GetSeriesResponse
+	8,  // 25: muxcore.comics.v1.ComicManagementService.ListSeries:output_type -> muxcore.comics.v1.ListSeriesResponse
+	10, // 26: muxcore.comics.v1.ComicManagementService.UpdateSeries:output_type -> muxcore.comics.v1.UpdateSeriesResponse
+	12, // 27: muxcore.comics.v1.ComicManagementService.RemoveSeries:output_type -> muxcore.comics.v1.RemoveSeriesResponse
+	14, // 28: muxcore.comics.v1.ComicManagementService.AddIssue:output_type -> muxcore.comics.v1.AddIssueResponse
+	16, // 29: muxcore.comics.v1.ComicManagementService.GetIssue:output_type -> muxcore.comics.v1.GetIssueResponse
+	18, // 30: muxcore.comics.v1.ComicManagementService.ListIssues:output_type -> muxcore.comics.v1.ListIssuesResponse
+	20, // 31: muxcore.comics.v1.ComicManagementService.UpdateIssue:output_type -> muxcore.comics.v1.UpdateIssueResponse
+	22, // 32: muxcore.comics.v1.ComicManagementService.RemoveIssue:output_type -> muxcore.comics.v1.RemoveIssueResponse
+	24, // 33: muxcore.comics.v1.ComicManagementService.ScanLibrary:output_type -> muxcore.comics.v1.ScanLibraryResponse
+	26, // 34: muxcore.comics.v1.ComicManagementService.ListMissing:output_type -> muxcore.comics.v1.ListMissingResponse
+	28, // 35: muxcore.comics.v1.ComicManagementService.ImportIssue:output_type -> muxcore.comics.v1.ImportIssueResponse
+	23, // [23:36] is the sub-list for method output_type
+	10, // [10:23] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_muxcore_comics_v1_comics_proto_init() }
@@ -910,13 +1871,15 @@ func file_muxcore_comics_v1_comics_proto_init() {
 	if File_muxcore_comics_v1_comics_proto != nil {
 		return
 	}
+	file_muxcore_comics_v1_comics_proto_msgTypes[9].OneofWrappers = []any{}
+	file_muxcore_comics_v1_comics_proto_msgTypes[19].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_muxcore_comics_v1_comics_proto_rawDesc), len(file_muxcore_comics_v1_comics_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

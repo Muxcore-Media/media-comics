@@ -4,14 +4,21 @@ package muxcore.comics.v1;
 
 option go_package = "github.com/Muxcore-Media/media-comics/proto/gen/muxcore/comics/v1;comicsv1";
 
-// ComicManagementService manages manga/comic series and issues (scaffold).
+// ComicManagementService manages manga/comic series and issues.
 service ComicManagementService {
   rpc AddSeries(AddSeriesRequest) returns (AddSeriesResponse);
   rpc GetSeries(GetSeriesRequest) returns (GetSeriesResponse);
   rpc ListSeries(ListSeriesRequest) returns (ListSeriesResponse);
+  rpc UpdateSeries(UpdateSeriesRequest) returns (UpdateSeriesResponse);
   rpc RemoveSeries(RemoveSeriesRequest) returns (RemoveSeriesResponse);
   rpc AddIssue(AddIssueRequest) returns (AddIssueResponse);
+  rpc GetIssue(GetIssueRequest) returns (GetIssueResponse);
   rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse);
+  rpc UpdateIssue(UpdateIssueRequest) returns (UpdateIssueResponse);
+  rpc RemoveIssue(RemoveIssueRequest) returns (RemoveIssueResponse);
+  rpc ScanLibrary(ScanLibraryRequest) returns (ScanLibraryResponse);
+  rpc ListMissing(ListMissingRequest) returns (ListMissingResponse);
+  rpc ImportIssue(ImportIssueRequest) returns (ImportIssueResponse);
 }
 
 message Series {
@@ -30,6 +37,17 @@ message Issue {
   string number = 4;
   int32 year = 5;
   bool monitored = 6;
+  string path = 7;
+  bool has_file = 8;
+}
+
+message MissingIssue {
+  string issue_id = 1;
+  string series_id = 2;
+  string title = 3;
+  string number = 4;
+  string series_name = 5;
+  int32 year = 6;
 }
 
 message AddSeriesRequest {
@@ -44,6 +62,14 @@ message GetSeriesRequest { string id = 1; }
 message GetSeriesResponse { Series series = 1; }
 message ListSeriesRequest { string query = 1; }
 message ListSeriesResponse { repeated Series series = 1; }
+message UpdateSeriesRequest {
+  string id = 1;
+  optional string title = 2;
+  optional string publisher = 3;
+  optional bool monitored = 4;
+  optional string path = 5;
+}
+message UpdateSeriesResponse { Series series = 1; }
 message RemoveSeriesRequest { string id = 1; bool delete_files = 2; }
 message RemoveSeriesResponse { bool success = 1; }
 
@@ -55,5 +81,43 @@ message AddIssueRequest {
   bool monitored = 5;
 }
 message AddIssueResponse { Issue issue = 1; }
+message GetIssueRequest { string id = 1; }
+message GetIssueResponse { Issue issue = 1; }
 message ListIssuesRequest { string series_id = 1; }
 message ListIssuesResponse { repeated Issue issues = 1; }
+message UpdateIssueRequest {
+  string id = 1;
+  optional string title = 2;
+  optional string number = 3;
+  optional int32 year = 4;
+  optional bool monitored = 5;
+  optional string path = 6;
+}
+message UpdateIssueResponse { Issue issue = 1; }
+message RemoveIssueRequest { string id = 1; bool delete_files = 2; }
+message RemoveIssueResponse { bool success = 1; }
+
+message ScanLibraryRequest {}
+message ScanLibraryResponse {
+  int32 files_found = 1;
+  int32 files_imported = 2;
+  int32 files_skipped = 3;
+  int32 paths_cleared = 4;
+}
+
+message ListMissingRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+message ListMissingResponse {
+  repeated MissingIssue items = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message ImportIssueRequest {
+  string issue_id = 1;
+  string path = 2;
+}
+message ImportIssueResponse { Issue issue = 1; }

@@ -104,7 +104,59 @@ func TestModuleInitScan(t *testing.T) {
 	}
 }
 
-// TestScanConfiguredLibrary scans COMICS_DATA_DIR / COMICS_LIBRARY_DIR when RUN_LIBRARY_SCAN=1.
+func TestScanClearsMissingPaths(t *testing.T) {
+	root := t.TempDir()
+	seriesDir := filepath.Join(root, "Fixture Series")
+	if err := os.MkdirAll(seriesDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(seriesDir, "001.cbz")
+	if err := os.WriteFile(file, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	s, _ := openTempStore(t)
+	ctx := t.Context()
+	res, err := s.ScanLibraryRoot(ctx, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesImported != 1 {
+		t.Fatalf("%+v", res)
+	}
+	issues, err := s.ListIssues(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 || issues[0].Path == "" {
+		t.Fatalf("%+v", issues)
+	}
+
+	if err := os.Remove(file); err != nil {
+		t.Fatal(err)
+	}
+	res2, err := s.ScanLibraryRoot(ctx, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res2.PathsCleared != 1 {
+		t.Fatalf("expected path cleared, got %+v", res2)
+	}
+	issues2, err := s.ListIssues(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if issues2[0].Path != "" {
+		t.Fatalf("path not cleared: %+v", issues2[0])
+	}
+	missing, total, err := s.ListMissingIssues(ctx, 1, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if total != 1 || len(missing) != 1 {
+		t.Fatalf("total=%d missing=%d", total, len(missing))
+	}
+}
 func TestScanConfiguredLibrary(t *testing.T) {
 	if os.Getenv("RUN_LIBRARY_SCAN") != "1" {
 		t.Skip("set RUN_LIBRARY_SCAN=1")
@@ -149,4 +201,13 @@ func copyTree(src, dst string) error {
 		}
 		return os.WriteFile(target, data, 0o644)
 	})
+}
+
+func copyFixtureLibrary(t *testing.T, data string) string {
+	t.Helper()
+	lib := filepath.Join(data, "library")
+	if err := copyTree(filepath.Join("testdata", "library"), lib); err != nil {
+		t.Fatal(err)
+	}
+	return lib
 }
