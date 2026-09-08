@@ -96,6 +96,164 @@ func TestHTTPScanEndpoint(t *testing.T) {
 	}
 }
 
+func TestHTTPPatchSeriesAndIssueMonitored(t *testing.T) {
+	data := t.TempDir()
+	lib := copyFixtureLibrary(t, data)
+	m := startHTTPModule(t, data, lib)
+	base := "http://" + m.HTTPListenAddr()
+
+	seriesResp, err := http.Get(base + "/api/series")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer seriesResp.Body.Close()
+	var series []struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(seriesResp.Body).Decode(&series); err != nil {
+		t.Fatal(err)
+	}
+	if len(series) == 0 {
+		t.Fatal("expected series")
+	}
+
+	issuesResp, err := http.Get(base + "/api/issues?series_id=" + series[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer issuesResp.Body.Close()
+	var issues []struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(issuesResp.Body).Decode(&issues); err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) == 0 {
+		t.Fatal("expected issues")
+	}
+
+	serReq, err := http.NewRequest(http.MethodPatch, base+"/api/series/"+series[0].ID, bytes.NewBufferString(`{"monitored":false}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	serPatch, err := http.DefaultClient.Do(serReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer serPatch.Body.Close()
+	if serPatch.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(serPatch.Body)
+		t.Fatalf("series patch %d: %s", serPatch.StatusCode, b)
+	}
+
+	issReq, err := http.NewRequest(http.MethodPatch, base+"/api/issues/"+issues[0].ID, bytes.NewBufferString(`{"monitored":false}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	issPatch, err := http.DefaultClient.Do(issReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer issPatch.Body.Close()
+	if issPatch.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(issPatch.Body)
+		t.Fatalf("issue patch %d: %s", issPatch.StatusCode, b)
+	}
+	var iss struct {
+		Monitored bool `json:"monitored"`
+	}
+	if err := json.NewDecoder(issPatch.Body).Decode(&iss); err != nil {
+		t.Fatal(err)
+	}
+	if iss.Monitored {
+		t.Fatal("expected issue unmonitored")
+	}
+}
+
+func TestHTTPDeleteSeriesAndIssue(t *testing.T) {
+	data := t.TempDir()
+	lib := copyFixtureLibrary(t, data)
+	m := startHTTPModule(t, data, lib)
+	base := "http://" + m.HTTPListenAddr()
+
+	seriesResp, err := http.Get(base + "/api/series")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer seriesResp.Body.Close()
+	var series []struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(seriesResp.Body).Decode(&series); err != nil {
+		t.Fatal(err)
+	}
+	if len(series) == 0 {
+		t.Fatal("expected series")
+	}
+
+	issuesResp, err := http.Get(base + "/api/issues?series_id=" + series[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer issuesResp.Body.Close()
+	var issues []struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(issuesResp.Body).Decode(&issues); err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) == 0 {
+		t.Fatal("expected issues")
+	}
+
+	issReq, err := http.NewRequest(http.MethodDelete, base+"/api/issues/"+issues[0].ID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issResp, err := http.DefaultClient.Do(issReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer issResp.Body.Close()
+	if issResp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(issResp.Body)
+		t.Fatalf("issue delete %d: %s", issResp.StatusCode, b)
+	}
+
+	serReq, err := http.NewRequest(http.MethodDelete, base+"/api/series/"+series[0].ID+"?delete_files=1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serResp, err := http.DefaultClient.Do(serReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer serResp.Body.Close()
+	if serResp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(serResp.Body)
+		t.Fatalf("series delete %d: %s", serResp.StatusCode, b)
+	}
+	var body struct {
+		Removed     bool `json:"removed"`
+		DeleteFiles bool `json:"delete_files"`
+	}
+	if err := json.NewDecoder(serResp.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	if !body.Removed || !body.DeleteFiles {
+		t.Fatalf("unexpected series delete: %+v", body)
+	}
+
+	missing, err := http.Get(base + "/api/series/" + series[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer missing.Body.Close()
+	if missing.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected series 404, got %d", missing.StatusCode)
+	}
+}
+
 func TestHTTPStreamIssue(t *testing.T) {
 	data := t.TempDir()
 	lib := copyFixtureLibrary(t, data)
@@ -233,6 +391,79 @@ func TestHTTPImportIssue(t *testing.T) {
 	defer badResp.Body.Close()
 	if badResp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("outside import status %d", badResp.StatusCode)
+	}
+}
+
+func TestHTTPAddIssue(t *testing.T) {
+	data := t.TempDir()
+	lib := copyFixtureLibrary(t, data)
+	m := startHTTPModule(t, data, lib)
+	base := "http://" + m.HTTPListenAddr()
+
+	listResp, err := http.Get(base + "/api/series")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listResp.Body.Close()
+	var series []struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(listResp.Body).Decode(&series); err != nil {
+		t.Fatal(err)
+	}
+	if len(series) == 0 {
+		t.Fatal("expected series")
+	}
+
+	body, _ := json.Marshal(map[string]any{"title": "Romance Dawn", "number": "1", "year": 1997})
+	resp, err := http.Post(base+"/api/series/"+series[0].ID+"/issues", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		t.Fatalf("add issue %d: %s", resp.StatusCode, b)
+	}
+	var added struct {
+		ID       string `json:"id"`
+		SeriesID string `json:"series_id"`
+		Title    string `json:"title"`
+		Number   string `json:"number"`
+		Year     int32  `json:"year"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&added); err != nil {
+		t.Fatal(err)
+	}
+	if added.ID == "" || added.SeriesID != series[0].ID || added.Title != "Romance Dawn" || added.Number != "1" || added.Year != 1997 {
+		t.Fatalf("added: %+v", added)
+	}
+}
+
+func TestHTTPAddSeries(t *testing.T) {
+	data := t.TempDir()
+	lib := copyFixtureLibrary(t, data)
+	m := startHTTPModule(t, data, lib)
+	body, _ := json.Marshal(map[string]any{"title": "One Piece", "publisher": "Shueisha"})
+	resp, err := http.Post("http://"+m.HTTPListenAddr()+"/api/series", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		t.Fatalf("add series %d: %s", resp.StatusCode, b)
+	}
+	var added struct {
+		ID        string `json:"id"`
+		Title     string `json:"title"`
+		Publisher string `json:"publisher"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&added); err != nil {
+		t.Fatal(err)
+	}
+	if added.ID == "" || added.Title != "One Piece" || added.Publisher != "Shueisha" {
+		t.Fatalf("added: %+v", added)
 	}
 }
 
