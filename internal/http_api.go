@@ -9,8 +9,14 @@ import (
 
 func (m *Module) registerComicsHTTPAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/series", m.handleListSeriesHTTP)
+	mux.HandleFunc("POST /api/series", m.handleAddSeriesHTTP)
 	mux.HandleFunc("GET /api/series/{id}", m.handleGetSeriesHTTP)
+	mux.HandleFunc("POST /api/series/{id}/issues", m.handleAddIssueHTTP)
+	mux.HandleFunc("PATCH /api/series/{id}", m.handlePatchSeriesHTTP)
+	mux.HandleFunc("DELETE /api/series/{id}", m.handleDeleteSeriesHTTP)
 	mux.HandleFunc("GET /api/issues", m.handleListIssuesHTTP)
+	mux.HandleFunc("PATCH /api/issues/{id}", m.handlePatchIssueHTTP)
+	mux.HandleFunc("DELETE /api/issues/{id}", m.handleDeleteIssueHTTP)
 	mux.HandleFunc("GET /api/missing", m.handleListMissingHTTP)
 	mux.HandleFunc("POST /api/scan", m.handleScanHTTP)
 	mux.HandleFunc("POST /api/issues/{id}/import", m.handleImportIssueHTTP)
@@ -32,6 +38,43 @@ func (m *Module) handleListSeriesHTTP(w http.ResponseWriter, r *http.Request) {
 		out = append(out, toSeriesJSON(s))
 	}
 	writeJSON(w, out)
+}
+
+func (m *Module) handleAddSeriesHTTP(w http.ResponseWriter, r *http.Request) {
+	if m.store == nil {
+		http.Error(w, `{"error":"store not open"}`, http.StatusServiceUnavailable)
+		return
+	}
+	var body struct {
+		Title     string `json:"title"`
+		Publisher string `json:"publisher"`
+		Monitored *bool  `json:"monitored"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"invalid json body"}`, http.StatusBadRequest)
+		return
+	}
+	title := strings.TrimSpace(body.Title)
+	if title == "" {
+		http.Error(w, `{"error":"title required"}`, http.StatusBadRequest)
+		return
+	}
+	monitored := true
+	if body.Monitored != nil {
+		monitored = *body.Monitored
+	}
+	ser, err := m.store.AddSeries(r.Context(), Series{
+		Title: title, Publisher: strings.TrimSpace(body.Publisher), Monitored: monitored,
+	})
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "required") {
+			status = http.StatusBadRequest
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	writeJSON(w, toSeriesJSON(ser))
 }
 
 func (m *Module) handleGetSeriesHTTP(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +106,128 @@ func (m *Module) handleGetSeriesHTTP(w http.ResponseWriter, r *http.Request) {
 		detail.Issues = append(detail.Issues, toIssueJSON(iss))
 	}
 	writeJSON(w, detail)
+}
+
+func (m *Module) handlePatchSeriesHTTP(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" || m.store == nil {
+		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		return
+	}
+	mon, ok := readMonitoredJSON(w, r)
+	if !ok {
+		return
+	}
+	ser, err := m.store.UpdateSeries(r.Context(), id, SeriesUpdate{Monitored: &mon})
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	writeJSON(w, toSeriesJSON(ser))
+}
+
+func (m *Module) handleAddIssueHTTP(w http.ResponseWriter, r *http.Request) {
+	seriesID := strings.TrimSpace(r.PathValue("id"))
+	if seriesID == "" || m.store == nil {
+		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		return
+	}
+	var body struct {
+		Title     string `json:"title"`
+		Number    string `json:"number"`
+		Year      int32  `json:"year"`
+		Monitored *bool  `json:"monitored"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"invalid json body"}`, http.StatusBadRequest)
+		return
+	}
+	title := strings.TrimSpace(body.Title)
+	number := strings.TrimSpace(body.Number)
+	if title == "" && number == "" {
+		http.Error(w, `{"error":"title or number required"}`, http.StatusBadRequest)
+		return
+	}
+	monitored := true
+	if body.Monitored != nil {
+		monitored = *body.Monitored
+	}
+	iss, err := m.store.AddIssue(r.Context(), Issue{
+		SeriesID: seriesID, Title: title, Number: number, Year: body.Year, Monitored: monitored,
+	})
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		} else if strings.Contains(err.Error(), "required") {
+			status = http.StatusBadRequest
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	writeJSON(w, toIssueJSON(iss))
+}
+
+func (m *Module) handlePatchIssueHTTP(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" || m.store == nil {
+		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		return
+	}
+	mon, ok := readMonitoredJSON(w, r)
+	if !ok {
+		return
+	}
+	iss, err := m.store.UpdateIssue(r.Context(), id, IssueUpdate{Monitored: &mon})
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	writeJSON(w, toIssueJSON(iss))
+}
+
+func (m *Module) handleDeleteSeriesHTTP(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" || m.store == nil {
+		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		return
+	}
+	deleteFiles := queryDeleteFiles(r)
+	if err := m.removeSeries(r.Context(), id, deleteFiles); err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	writeJSON(w, map[string]any{"removed": true, "delete_files": deleteFiles})
+}
+
+func (m *Module) handleDeleteIssueHTTP(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" || m.store == nil {
+		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
+		return
+	}
+	deleteFiles := queryDeleteFiles(r)
+	if err := m.removeIssue(r.Context(), id, deleteFiles); err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		http.Error(w, fmtJSONError(err), status)
+		return
+	}
+	writeJSON(w, map[string]any{"removed": true, "delete_files": deleteFiles})
 }
 
 func (m *Module) handleListIssuesHTTP(w http.ResponseWriter, r *http.Request) {
@@ -238,6 +403,22 @@ func toIssueJSON(i *Issue) issueJSON {
 		Number: i.Number, Year: i.Year, Monitored: i.Monitored,
 		Path: i.Path, HasFile: issueHasFile(i.Path),
 	}
+}
+
+func queryDeleteFiles(r *http.Request) bool {
+	raw := strings.TrimSpace(r.URL.Query().Get("delete_files"))
+	return raw == "1" || strings.EqualFold(raw, "true") || strings.EqualFold(raw, "yes")
+}
+
+func readMonitoredJSON(w http.ResponseWriter, r *http.Request) (bool, bool) {
+	var body struct {
+		Monitored *bool `json:"monitored"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Monitored == nil {
+		http.Error(w, `{"error":"monitored is required"}`, http.StatusBadRequest)
+		return false, false
+	}
+	return *body.Monitored, true
 }
 
 func writeJSON(w http.ResponseWriter, v any) {

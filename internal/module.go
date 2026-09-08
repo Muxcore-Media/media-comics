@@ -274,28 +274,35 @@ func (s *comicServer) UpdateSeries(ctx context.Context, req *comicsv1.UpdateSeri
 	return &comicsv1.UpdateSeriesResponse{Series: toPBSeries(ser)}, nil
 }
 
-func (s *comicServer) RemoveSeries(ctx context.Context, req *comicsv1.RemoveSeriesRequest) (*comicsv1.RemoveSeriesResponse, error) {
-	if req.GetDeleteFiles() {
-		ser, err := s.m.store.GetSeries(ctx, req.GetId())
+func (m *Module) removeSeries(ctx context.Context, id string, deleteFiles bool) error {
+	if m.store == nil {
+		return fmt.Errorf("store not open")
+	}
+	if deleteFiles {
+		ser, err := m.store.GetSeries(ctx, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		paths, err := s.m.store.ListSeriesIssuePaths(ctx, req.GetId())
+		paths, err := m.store.ListSeriesIssuePaths(ctx, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, p := range paths {
-			if err := s.m.deleteFileIfInLibrary(p); err != nil {
-				return nil, err
+			if err := m.deleteFileIfInLibrary(p); err != nil {
+				return err
 			}
 		}
 		if ser.Path != "" {
-			if err := s.m.deleteFileIfInLibrary(ser.Path); err != nil {
-				return nil, err
+			if err := m.deleteFileIfInLibrary(ser.Path); err != nil {
+				return err
 			}
 		}
 	}
-	if err := s.m.store.RemoveSeries(ctx, req.GetId()); err != nil {
+	return m.store.RemoveSeries(ctx, id)
+}
+
+func (s *comicServer) RemoveSeries(ctx context.Context, req *comicsv1.RemoveSeriesRequest) (*comicsv1.RemoveSeriesResponse, error) {
+	if err := s.m.removeSeries(ctx, req.GetId(), req.GetDeleteFiles()); err != nil {
 		return nil, err
 	}
 	return &comicsv1.RemoveSeriesResponse{Success: true}, nil
@@ -356,17 +363,21 @@ func (s *comicServer) UpdateIssue(ctx context.Context, req *comicsv1.UpdateIssue
 	return &comicsv1.UpdateIssueResponse{Issue: toPBIssue(iss)}, nil
 }
 
-func (s *comicServer) RemoveIssue(ctx context.Context, req *comicsv1.RemoveIssueRequest) (*comicsv1.RemoveIssueResponse, error) {
-	if req.GetDeleteFiles() {
-		iss, err := s.m.store.GetIssue(ctx, req.GetId())
+func (m *Module) removeIssue(ctx context.Context, id string, deleteFiles bool) error {
+	if deleteFiles {
+		iss, err := m.store.GetIssue(ctx, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if err := s.m.deleteFileIfInLibrary(iss.Path); err != nil {
-			return nil, err
+		if err := m.deleteFileIfInLibrary(iss.Path); err != nil {
+			return err
 		}
 	}
-	if err := s.m.store.RemoveIssue(ctx, req.GetId()); err != nil {
+	return m.store.RemoveIssue(ctx, id)
+}
+
+func (s *comicServer) RemoveIssue(ctx context.Context, req *comicsv1.RemoveIssueRequest) (*comicsv1.RemoveIssueResponse, error) {
+	if err := s.m.removeIssue(ctx, req.GetId(), req.GetDeleteFiles()); err != nil {
 		return nil, err
 	}
 	return &comicsv1.RemoveIssueResponse{Success: true}, nil
