@@ -10,6 +10,9 @@ import (
 func (m *Module) registerComicsHTTPAPI(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/series", m.handleListSeriesHTTP)
 	mux.HandleFunc("POST /api/series", m.handleAddSeriesHTTP)
+	mux.HandleFunc("GET /api/series/{id}/artwork", m.handleListSeriesArtworkHTTP)
+	mux.HandleFunc("POST /api/series/{id}/artwork", m.handleReplaceSeriesArtworkHTTP)
+	mux.HandleFunc("GET /api/series/{id}/history", m.handleListSeriesHistoryHTTP)
 	mux.HandleFunc("GET /api/series/{id}", m.handleGetSeriesHTTP)
 	mux.HandleFunc("POST /api/series/{id}/issues", m.handleAddIssueHTTP)
 	mux.HandleFunc("PATCH /api/series/{id}", m.handlePatchSeriesHTTP)
