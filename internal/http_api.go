@@ -114,11 +114,24 @@ func (m *Module) handlePatchSeriesHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"id required"}`, http.StatusBadRequest)
 		return
 	}
-	mon, ok := readMonitoredJSON(w, r)
-	if !ok {
+	var body struct {
+		Monitored *bool   `json:"monitored"`
+		Path      *string `json:"path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"invalid json body"}`, http.StatusBadRequest)
 		return
 	}
-	ser, err := m.store.UpdateSeries(r.Context(), id, SeriesUpdate{Monitored: &mon})
+	if body.Monitored == nil && body.Path == nil {
+		http.Error(w, `{"error":"monitored or path is required"}`, http.StatusBadRequest)
+		return
+	}
+	upd := SeriesUpdate{Monitored: body.Monitored}
+	if body.Path != nil {
+		p := strings.TrimSpace(*body.Path)
+		upd.Path = &p
+	}
+	ser, err := m.store.UpdateSeries(r.Context(), id, upd)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "not found") {
