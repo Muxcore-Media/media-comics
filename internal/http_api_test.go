@@ -168,6 +168,29 @@ func TestHTTPPatchSeriesAndIssueMonitored(t *testing.T) {
 	if iss.Monitored {
 		t.Fatal("expected issue unmonitored")
 	}
+
+	pathReq, err := http.NewRequest(http.MethodPatch, base+"/api/series/"+series[0].ID, bytes.NewBufferString(`{"path":"/data/comics"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pathPatch, err := http.DefaultClient.Do(pathReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pathPatch.Body.Close()
+	if pathPatch.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(pathPatch.Body)
+		t.Fatalf("series path patch %d: %s", pathPatch.StatusCode, b)
+	}
+	var ser struct {
+		Path string `json:"path"`
+	}
+	if err := json.NewDecoder(pathPatch.Body).Decode(&ser); err != nil {
+		t.Fatal(err)
+	}
+	if ser.Path != "/data/comics" {
+		t.Fatalf("series path %q", ser.Path)
+	}
 }
 
 func TestHTTPDeleteSeriesAndIssue(t *testing.T) {
