@@ -19,6 +19,7 @@ type Series struct {
 	Publisher   string
 	ComicVineID string
 	Path        string
+	PosterURL   string
 	Monitored   bool
 }
 
@@ -82,9 +83,22 @@ func (s *Store) migrate(ctx context.Context) error {
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_issues_path ON issues(path) WHERE path != '';
 		CREATE INDEX IF NOT EXISTS idx_series_title ON series(title);
 		CREATE INDEX IF NOT EXISTS idx_issues_series ON issues(series_id);
+		CREATE TABLE IF NOT EXISTS history (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			item_id TEXT NOT NULL,
+			event_type TEXT NOT NULL,
+			source_title TEXT DEFAULT '',
+			quality TEXT DEFAULT '',
+			data TEXT DEFAULT '{}',
+			date TEXT NOT NULL
+		);
+		CREATE INDEX IF NOT EXISTS idx_history_item ON history(item_id);
 	`)
 	if err != nil {
 		return fmt.Errorf("migrate: %w", err)
+	}
+	if _, err := s.db.ExecContext(ctx, `ALTER TABLE series ADD COLUMN poster_url TEXT NOT NULL DEFAULT ''`); err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return fmt.Errorf("migrate poster_url: %w", err)
 	}
 	return nil
 }
@@ -129,14 +143,14 @@ func (s *Store) AddSeries(ctx context.Context, ser Series) (*Series, error) {
 
 func (s *Store) GetSeries(ctx context.Context, id string) (*Series, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, title, publisher, comicvine_id, monitored, path FROM series WHERE id = ?
+		SELECT id, title, publisher, comicvine_id, monitored, path, poster_url FROM series WHERE id = ?
 	`, id)
 	return scanSeries(row)
 }
 
 func (s *Store) ListSeries(ctx context.Context, query string) ([]*Series, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, title, publisher, comicvine_id, monitored, path FROM series ORDER BY title
+		SELECT id, title, publisher, comicvine_id, monitored, path, poster_url FROM series ORDER BY title
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("list series: %w", err)
@@ -158,6 +172,11 @@ func (s *Store) ListSeries(ctx context.Context, query string) ([]*Series, error)
 }
 
 func (s *Store) RemoveSeries(ctx context.Context, id string) error {
+	title := id
+	if ser, err := s.GetSeries(ctx, id); err == nil && ser != nil {
+		title = ser.Title
+	}
+	s.appendHistory(ctx, id, historyDeleteItem, title, "")
 	res, err := s.db.ExecContext(ctx, `DELETE FROM series WHERE id = ?`, id)
 	if err != nil {
 		return fmt.Errorf("delete series: %w", err)
@@ -214,13 +233,23 @@ func (s *Store) UpdateSeries(ctx context.Context, id string, upd SeriesUpdate) (
 		monitored = 1
 	}
 	_, err = s.db.ExecContext(ctx, `
-		UPDATE series SET title = ?, publisher = ?, monitored = ?, path = ?
+		UPDATE series SET title = ?, publisher = ?, monitored = ?, path = ?, poster_url = ?
 		WHERE id = ?
-	`, cur.Title, cur.Publisher, monitored, cur.Path, id)
+	`, cur.Title, cur.Publisher, monitored, cur.Path, cur.PosterURL, id)
 	if err != nil {
 		return nil, fmt.Errorf("update series: %w", err)
 	}
 	return cur, nil
+}
+
+func (s *Store) SetSeriesPosterURL(ctx context.Context, id, posterURL string) (*Series, error) {
+	if _, err := s.GetSeries(ctx, id); err != nil {
+		return nil, err
+	}
+	if _, err := s.db.ExecContext(ctx, `UPDATE series SET poster_url = ? WHERE id = ?`, posterURL, id); err != nil {
+		return nil, fmt.Errorf("update series poster: %w", err)
+	}
+	return s.GetSeries(ctx, id)
 }
 
 func (s *Store) GetIssue(ctx context.Context, id string) (*Issue, error) {
@@ -295,7 +324,12 @@ func (s *Store) ImportIssuePath(ctx context.Context, issueID, absPath string) (*
 		return nil, fmt.Errorf("path already attached to issue %q", existing.ID)
 	}
 	path := absPath
-	return s.UpdateIssue(ctx, issueID, IssueUpdate{Path: &path})
+	out, err := s.UpdateIssue(ctx, issueID, IssueUpdate{Path: &path})
+	if err != nil {
+		return nil, err
+	}
+	s.appendHistory(ctx, iss.SeriesID, historyImport, iss.Title, "")
+	return out, nil
 }
 
 func (s *Store) ListSeriesIssuePaths(ctx context.Context, seriesID string) ([]string, error) {
@@ -431,7 +465,7 @@ func (s *Store) ListMissingIssues(ctx context.Context, page, pageSize int) ([]Mi
 
 func (s *Store) findSeriesByTitle(ctx context.Context, title string) (*Series, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, title, publisher, comicvine_id, monitored, path FROM series
+		SELECT id, title, publisher, comicvine_id, monitored, path, poster_url FROM series
 		WHERE lower(title) = lower(?) LIMIT 1
 	`, title)
 	ser, err := scanSeries(row)
@@ -494,7 +528,7 @@ type rowScanner interface {
 func scanSeries(row rowScanner) (*Series, error) {
 	var ser Series
 	var monitored int
-	if err := row.Scan(&ser.ID, &ser.Title, &ser.Publisher, &ser.ComicVineID, &monitored, &ser.Path); err != nil {
+	if err := row.Scan(&ser.ID, &ser.Title, &ser.Publisher, &ser.ComicVineID, &monitored, &ser.Path, &ser.PosterURL); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("series not found")
 		}

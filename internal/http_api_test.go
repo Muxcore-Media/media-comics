@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Muxcore-Media/media-comics/internal"
@@ -487,6 +488,85 @@ func TestHTTPAddSeries(t *testing.T) {
 	}
 	if added.ID == "" || added.Title != "One Piece" || added.Publisher != "Shueisha" {
 		t.Fatalf("added: %+v", added)
+	}
+}
+
+func TestHTTPSeriesArtworkAndHistory(t *testing.T) {
+	data := t.TempDir()
+	lib := copyFixtureLibrary(t, data)
+	m := startHTTPModule(t, data, lib)
+	base := "http://" + m.HTTPListenAddr()
+
+	body, _ := json.Marshal(map[string]any{"title": "Cover Series", "publisher": "Viz"})
+	resp, err := http.Post(base+"/api/series", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	var added struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&added); err != nil {
+		t.Fatal(err)
+	}
+
+	replaceBody, _ := json.Marshal(map[string]any{
+		"type": "poster", "filename": "cover.jpg", "data": "iVBORw0KGgo=",
+	})
+	replaceResp, err := http.Post(base+"/api/series/"+added.ID+"/artwork", "application/json", bytes.NewReader(replaceBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = replaceResp.Body.Close() }()
+	if replaceResp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(replaceResp.Body)
+		t.Fatalf("replace %d: %s", replaceResp.StatusCode, b)
+	}
+	var replaced struct {
+		OK      bool `json:"ok"`
+		Artwork struct {
+			URL string `json:"url"`
+		} `json:"artwork"`
+	}
+	if err := json.NewDecoder(replaceResp.Body).Decode(&replaced); err != nil {
+		t.Fatal(err)
+	}
+	if !replaced.OK || !strings.Contains(replaced.Artwork.URL, "/images/"+added.ID+"/poster.jpg") {
+		t.Fatalf("replaced: %+v", replaced)
+	}
+
+	listedResp, err := http.Get(base + "/api/series/" + added.ID + "/artwork")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = listedResp.Body.Close() }()
+	var listed struct {
+		Available bool `json:"available"`
+		Items     []struct {
+			URL string `json:"url"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(listedResp.Body).Decode(&listed); err != nil {
+		t.Fatal(err)
+	}
+	if !listed.Available || len(listed.Items) != 1 {
+		t.Fatalf("listed: %+v", listed)
+	}
+
+	histResp, err := http.Get(base + "/api/series/" + added.ID + "/history")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = histResp.Body.Close() }()
+	var hist struct {
+		Available bool `json:"available"`
+		Total     int  `json:"total"`
+	}
+	if err := json.NewDecoder(histResp.Body).Decode(&hist); err != nil {
+		t.Fatal(err)
+	}
+	if !hist.Available {
+		t.Fatalf("history: %+v", hist)
 	}
 }
 
