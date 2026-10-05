@@ -36,6 +36,6 @@ func issueHasFile(path string) bool {
 	if strings.TrimSpace(path) == "" {
 		return false
 	}
-	info, err := os.Stat(path)
+	info, err := os.Stat(path) //nolint:gosec // stat-only existence check on a path persisted by the library scan
 	return err == nil && !info.IsDir()
 }

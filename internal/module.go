@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -17,6 +18,17 @@ import (
 	modulesdk "github.com/Muxcore-Media/core/sdk/go/module"
 	comicsv1 "github.com/Muxcore-Media/media-comics/proto/gen/muxcore/comics/v1"
 )
+
+// clampInt32 converts n to int32, saturating at the int32 bounds.
+func clampInt32(n int) int32 {
+	if n > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if n < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(n) //nolint:gosec // bounds checked above
+}
 
 type Module struct {
 	lis        net.Listener
@@ -176,7 +188,7 @@ func (m *Module) deleteFileIfInLibrary(path string) error {
 	if err != nil {
 		return err
 	}
-	info, err := os.Stat(abs)
+	info, err := os.Stat(abs) //nolint:gosec // abs was validated to lie under the library root by resolveLibraryPath
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -186,7 +198,7 @@ func (m *Module) deleteFileIfInLibrary(path string) error {
 	if info.IsDir() {
 		return nil
 	}
-	if err := os.Remove(abs); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(abs); err != nil && !os.IsNotExist(err) { //nolint:gosec // abs was validated to lie under the library root by resolveLibraryPath
 		return fmt.Errorf("delete file %s: %w", abs, err)
 	}
 	return nil
@@ -397,8 +409,8 @@ func (s *comicServer) ScanLibrary(ctx context.Context, _ *comicsv1.ScanLibraryRe
 		return nil, err
 	}
 	return &comicsv1.ScanLibraryResponse{
-		FilesFound: int32(res.FilesFound), FilesImported: int32(res.FilesImported),
-		FilesSkipped: int32(res.FilesSkipped), PathsCleared: int32(res.PathsCleared),
+		FilesFound: clampInt32(res.FilesFound), FilesImported: clampInt32(res.FilesImported),
+		FilesSkipped: clampInt32(res.FilesSkipped), PathsCleared: clampInt32(res.PathsCleared),
 	}, nil
 }
 
@@ -423,7 +435,7 @@ func (s *comicServer) ListMissing(ctx context.Context, req *comicsv1.ListMissing
 		})
 	}
 	return &comicsv1.ListMissingResponse{
-		Items: out, Total: int32(total), Page: int32(page), PageSize: int32(pageSize),
+		Items: out, Total: clampInt32(total), Page: clampInt32(page), PageSize: clampInt32(pageSize),
 	}, nil
 }
 

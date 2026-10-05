@@ -59,9 +59,9 @@ func (s *Store) ScanLibraryRoot(ctx context.Context, root string) (*ScanResult, 
 		if _, ok := comicExts[ext]; !ok {
 			return nil
 		}
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			return err
+		absPath, absErr := filepath.Abs(path)
+		if absErr != nil {
+			return absErr
 		}
 		foundPaths[absPath] = struct{}{}
 		res.FilesFound++
