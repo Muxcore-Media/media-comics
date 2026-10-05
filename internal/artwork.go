@@ -50,6 +50,9 @@ func (m *Module) writeArtworkBytes(itemID, filename, contentType string, data []
 	if itemID == "" {
 		return "", "", fmt.Errorf("item id required")
 	}
+	if itemID == "." || itemID == ".." || itemID != filepath.Base(itemID) || strings.ContainsAny(itemID, `/\\`) {
+		return "", "", fmt.Errorf("invalid item id")
+	}
 	if len(data) == 0 {
 		return "", "", fmt.Errorf("empty artwork data")
 	}
@@ -58,12 +61,12 @@ func (m *Module) writeArtworkBytes(itemID, filename, contentType string, data []
 	}
 	ext := extFromFilenameOrMIME(filename, contentType)
 	dir := filepath.Join(m.getImageDir(), itemID)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil { //nolint:gosec // dir is under the image root; itemID validated above
 		return "", "", fmt.Errorf("create artwork dir: %w", err)
 	}
 	relPath = filepath.ToSlash(filepath.Join(itemID, "poster"+ext))
 	abs := filepath.Join(m.getImageDir(), filepath.FromSlash(relPath))
-	if err := os.WriteFile(abs, data, 0o600); err != nil {
+	if err := os.WriteFile(abs, data, 0o600); err != nil { //nolint:gosec // abs is under the image root; itemID validated above
 		return "", "", fmt.Errorf("write artwork: %w", err)
 	}
 	mime = contentType

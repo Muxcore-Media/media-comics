@@ -49,9 +49,9 @@ func (m *Module) handleAddSeriesHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
+		Monitored *bool  `json:"monitored"`
 		Title     string `json:"title"`
 		Publisher string `json:"publisher"`
-		Monitored *bool  `json:"monitored"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, `{"error":"invalid json body"}`, http.StatusBadRequest)
@@ -153,10 +153,10 @@ func (m *Module) handleAddIssueHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
+		Monitored *bool  `json:"monitored"`
 		Title     string `json:"title"`
 		Number    string `json:"number"`
 		Year      int32  `json:"year"`
-		Monitored *bool  `json:"monitored"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, `{"error":"invalid json body"}`, http.StatusBadRequest)
