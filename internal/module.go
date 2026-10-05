@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	manifest "github.com/Muxcore-Media/media-comics"
+
 	"google.golang.org/grpc"
 
 	"github.com/Muxcore-Media/core/pkg/contracts"
@@ -89,7 +91,7 @@ func NewModule(cfg Config) *Module {
 
 func (m *Module) Info() contracts.ModuleInfo {
 	return contracts.ModuleInfo{
-		ID: m.id, Name: "Manga / Comic Manager", Version: "0.2.0",
+		ID: m.id, Name: "Manga / Comic Manager", Version: modulesdk.ManifestVersion(manifest.ManifestJSON),
 		Roles:        []string{"media", "comics"},
 		Description:  "Manga/comic series + issue library manager with SQLite persistence",
 		Capabilities: []string{"media.comics", "comics", "manga", "settings"},
