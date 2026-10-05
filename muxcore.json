@@ -1,7 +1,7 @@
 {
   "id": "media-comics",
   "name": "Manga / Comic Manager",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Manga/comic series + issue library manager with SQLite persistence",
   "roles": [
     "media",
